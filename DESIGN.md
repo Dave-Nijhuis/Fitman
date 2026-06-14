@@ -3,184 +3,65 @@
 ## Principles
 
 - **Mobile-first** — designed for one hand in a gym. Tap targets are large, inputs are minimal.
-- **Dark by default** — easier on the eyes in low-light gym environments.
+- **Clean and light** — warm off-white canvas, white cards, high contrast ink. Easy to read in any lighting.
 - **Speed** — you should be able to log a set in under 5 seconds.
 - **Glanceable** — the most important info (next exercise, rest timer, last weight) is always visible without scrolling.
 
 ## Colour palette
 
+Warm off-white canvas, white cards, near-black ink, single energetic orange-red accent.
+
 | Token | Value | Use |
 |---|---|---|
-| Background | `#111827` (gray-900) | Page background |
-| Surface | `#1F2937` (gray-800) | Cards, panels |
-| Border | `#374151` (gray-700) | Dividers |
-| Primary | `#3B82F6` (blue-500) | Buttons, active states |
-| Success | `#22C55E` (green-500) | Completed sets, PRs |
-| Warning | `#F59E0B` (amber-500) | Rest timer |
-| Text primary | `#F9FAFB` (gray-50) | Headings, values |
-| Text muted | `#9CA3AF` (gray-400) | Labels, secondary info |
+| `--bg` | `#f4f3ef` | Page background |
+| `--card` | `#ffffff` | Cards, panels |
+| `--ink` | `#1b1a17` | Primary text, headings |
+| `--muted` | `#716d64` | Secondary text, labels |
+| `--faint` | `#a8a39a` | Placeholder text, icons |
+| `--line` | `#eae7e0` | Dividers, borders |
+| `--line-strong` | `#ddd9d0` | Stronger borders |
+| `--accent` | `#ff5a36` | Buttons, active states, brand |
+| `--accent-soft` | 11% accent | Tinted backgrounds, chips |
+| `--good` | `#1f9d62` | Completed sets, positive deltas |
 
----
+## Typography
+
+| Role | Font | Weights |
+|---|---|---|
+| Body & UI | Hanken Grotesk | 400 · 500 · 600 · 700 · 800 |
+| Numbers & data | DM Mono | 400 · 500 |
 
 ## Screens
 
-### 1. Dashboard (laptop view)
+### Overview — desktop + mobile side by side
 
-The home screen after login. Shows today's scheduled workout and recent progress at a glance.
+![Desktop and mobile side by side](Fitman_design/screenshots/sidebyside.png)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  FITMAN                                          [Profile] [Settings]│
-├──────────────┬──────────────────────────────────────────────────────┤
-│              │                                                        │
-│  Navigation  │   Good morning, Dave                                  │
-│              │                                                        │
-│  Dashboard   │   TODAY'S WORKOUT                                      │
-│  Workouts ▶  │   ┌──────────────────────────────────────────────┐   │
-│  Exercises   │   │  Push A  •  5 exercises  •  ~45 min           │   │
-│  Progress    │   │                                              │   │
-│  History     │   │  [ Start Workout ]                           │   │
-│              │   └──────────────────────────────────────────────┘   │
-│              │                                                        │
-│              │   RECENT PROGRESS                                      │
-│              │   ┌────────────┐  ┌────────────┐  ┌────────────┐    │
-│              │   │ Flat DB    │  │One-Arm Row │  │ DB Goblet  │    │
-│              │   │ Bench Press│  │  ↑ 32kg    │  │   Squat   │    │
-│              │   │  ↑ 30kg    │  │  +2 this   │  │  → 24kg   │    │
-│              │   │  +2.5 this │  │  week      │  │  same as  │    │
-│              │   │  week      │  │            │  │  last week│    │
-│              │   └────────────┘  └────────────┘  └────────────┘    │
-│              │                                                        │
-│              │   VOLUME THIS WEEK                                     │
-│              │   ▂▄▅▇█▆▄  [chart placeholder]                       │
-│              │                                                        │
-└──────────────┴──────────────────────────────────────────────────────┘
-```
+Desktop uses a left sidebar (Home, Workout, Progress, History, Exercises, Settings). Mobile uses a bottom tab bar with a central FAB button to jump straight into a workout.
 
 ---
 
-### 2. Active workout — exercise list (mobile)
+### 1. Home / Dashboard
 
-After tapping "Start Workout". Shows the exercises for this session.
+![Dashboard](Fitman_design/screenshots/full.png)
 
-```
-┌─────────────────────┐
-│ ← Push A            │
-│ Exercise 3 of 5     │
-├─────────────────────┤
-│ ✓ Flat DB Bench     │
-│ ✓ Incline DB Press  │
-│ ▶ DB Shoulder Press │  ← current
-│   DB Lateral Raise  │
-│   OHd Tricep Ext    │
-├─────────────────────┤
-│                     │
-│  DB SHOULDER PRESS  │
-│                     │
-│  Last session:      │
-│  Set 1: 22kg × 8    │
-│  Set 2: 22kg × 8    │
-│  Set 3: 22kg × 6    │
-│                     │
-│  [ Log Set ]        │
-│                     │
-└─────────────────────┘
-```
+Stat strip at the top (streak, workouts this week, volume, time). Today's planned session below with a Start workout button and the exercise list. Weekly volume bar chart and recent personal records alongside.
 
 ---
 
-### 3. Logging a set (mobile)
+### 2. Active workout
 
-The core interaction. Big inputs, large tap targets, minimal friction.
+![Active workout](Fitman_design/screenshots/active.png)
 
-```
-┌─────────────────────┐
-│ ← DB Shoulder Press │
-│ Set 2 of 3          │
-├─────────────────────┤
-│                     │
-│  WEIGHT (kg)        │
-│                     │
-│  ┌───┐  ┌───────┐  ┌───┐ │
-│  │ - │  │  22   │  │ + │ │
-│  └───┘  └───────┘  └───┘ │
-│                     │
-│  REPS               │
-│                     │
-│  ┌───┐  ┌───────┐  ┌───┐ │
-│  │ - │  │   8   │  │ + │ │
-│  └───┘  └───────┘  └───┘ │
-│                     │
-│  ┌─────────────────┐│
-│  │   LOG SET ✓     ││
-│  └─────────────────┘│
-│                     │
-│  REST TIMER         │
-│     01:45           │
-│  ████████░░░░░░░    │
-│                     │
-└─────────────────────┘
-```
+Sticky header showing elapsed time, session name, total volume logged so far, and sets done / total. Rest timer banner appears automatically after completing a set (90 seconds, with +15s and Skip). Each exercise is a card with a `SET | PREV | KG | REPS | ✓` table — steppers for weight and reps, check to mark a set done. Add set button at the bottom of each card.
 
 ---
 
-### 4. Progress chart (mobile)
+### 3. Progress
 
-Viewed from the Progress tab. Shows a single lift's history over time.
+![Progress](Fitman_design/screenshots/progress.png)
 
-```
-┌─────────────────────┐
-│ ← Flat DB Bench     │
-│ Last 12 weeks       │
-├─────────────────────┤
-│                     │
-│ kg                  │
-│  90 ┤            ╭─ │
-│  85 ┤        ╭───╯  │
-│  80 ┤   ╭────╯      │
-│  75 ┤───╯           │
-│     └───────────── ▶│
-│     Mar  Apr  May   │
-│                     │
-│  PERSONAL BEST      │
-│  ┌─────────────────┐│
-│  │  87.5kg × 5     ││
-│  │  Week 18, 2026  ││
-│  └─────────────────┘│
-│                     │
-│  [ 1M ][ 3M ][ 1Y ] │
-│                     │
-└─────────────────────┘
-```
-
----
-
-### 5. Workout plans (laptop view)
-
-Browse and manage your training programmes.
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  FITMAN                                          [Profile] [Settings]│
-├──────────────┬──────────────────────────────────────────────────────┤
-│              │  Workout Plans                    [ + New Plan ]      │
-│  Dashboard   │                                                        │
-│  Workouts ▶  │  ACTIVE                                               │
-│  Exercises   │  ┌──────────────────────────────────────────────┐    │
-│  Progress    │  │  Push / Pull / Legs  •  6 days/week   [ ● ]  │    │
-│  History     │  │  Week 4 of 12  •  Started March 2026         │    │
-│              │  │  [ View Plan ]  [ Edit ]                     │    │
-│              │  └──────────────────────────────────────────────┘    │
-│              │                                                        │
-│              │  ARCHIVED                                              │
-│              │  ┌──────────────────────────────────────────────┐    │
-│              │  │  Starting Strength  •  3 days/week   [ ○ ]   │    │
-│              │  │  Completed Jan 2026  •  12 weeks              │    │
-│              │  │  [ View Plan ]                                │    │
-│              │  └──────────────────────────────────────────────┘    │
-│              │                                                        │
-└──────────────┴──────────────────────────────────────────────────────┘
-```
+Strength progression line chart showing estimated 1RM over time (Epley formula). Lift selector chips (Bench Press, Back Squat, Deadlift, Overhead Press) and time range toggle (4W / 12W / 1Y). Personal record callout beneath the chart. Scrolling down reveals: weekly volume bar chart, body weight line chart with goal line, consistency heatmap (17 weeks), muscle balance chart, and full PR list.
 
 ---
 

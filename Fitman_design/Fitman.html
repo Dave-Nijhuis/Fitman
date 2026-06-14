@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fitman — Fitness Tracker</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #d9d7d2;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.045) 1px, transparent 0);
+    background-size: 26px 26px;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    color: #1b1a17; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .fm-page { padding: 36px 26px 120px; }
+  .fm-page-head { max-width: 1640px; margin: 0 auto 36px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .fm-wordmark { display: flex; align-items: center; gap: 13px; }
+  .fm-wordmark .mk { width: 44px; height: 44px; border-radius: 13px; background: #ff5a36; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 22px rgba(255,90,54,.35); }
+  .fm-wordmark h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.03em; }
+  .fm-wordmark p { margin: 2px 0 0; font-size: 14px; color: #6f6b64; font-weight: 600; }
+  .fm-hint { font-size: 13px; color: #6f6b64; font-weight: 600; background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.06); padding: 9px 14px; border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; }
+  .fm-hint b { color: #ff5a36; }
+  .fm-frames { max-width: 1640px; margin: 0 auto; display: flex; gap: 34px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+  .fm-framewrap { display: flex; flex-direction: column; gap: 14px; }
+  .fm-frame-label { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: #4b4843; letter-spacing: -0.01em; padding-left: 4px; }
+  .fm-frame-label .pip { width: 8px; height: 8px; border-radius: 50%; background: #ff5a36; }
+  .fm-frame-label span.dim { color: #908b82; font-weight: 600; }
+  .loading { text-align: center; padding: 120px 20px; color: #908b82; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div id="root"><div class="loading">Loading Fitman…</div></div>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="22" fill="#ff5a36"/>
+      <path d="M54 26 36 56h12l-4 22 22-30H52l2-22Z" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+  </template>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="data.js"></script>
+  <script type="text/babel" src="frames/ios-frame.jsx"></script>
+  <script type="text/babel" src="frames/browser-window.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="charts.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="screen-home.jsx"></script>
+  <script type="text/babel" src="screen-active.jsx"></script>
+  <script type="text/babel" src="screen-history.jsx"></script>
+  <script type="text/babel" src="screen-library.jsx"></script>
+  <script type="text/babel" src="screen-progress.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accent": "#ff5a36",
+      "cards": "elevated",
+      "logControl": "steppers",
+      "balanceView": "bars"
+    }/*EDITMODE-END*/;
+
+    function Showcase() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      return (
+        <>
+          <div className="fm-page">
+            <div className="fm-page-head">
+              <div className="fm-wordmark">
+                <div className="mk" style={{ background: t.accent }}><Icon name="bolt" size={24} sw={2.2} color="#fff" /></div>
+                <div>
+                  <h1>Fitman</h1>
+                  <p>Log every set. Watch the numbers climb.</p>
+                </div>
+              </div>
+              <div className="fm-hint"><Icon name="settings" size={15} color="#ff5a36" /> Open <b>Tweaks</b> to recolor, restyle & switch logging / chart modes</div>
+            </div>
+
+            <div className="fm-frames">
+              <div className="fm-framewrap">
+                <div className="fm-frame-label"><span className="pip" style={{ background: t.accent }}></span> Desktop / PC <span className="dim">— sidebar navigation</span></div>
+                <ChromeWindow width={1116} height={772} url="fitman.app/today" tabs={[{ title: 'Fitman — Today' }, { title: 'Strava' }]}>
+                  <App platform="desktop" t={t} />
+                </ChromeWindow>
+              </div>
+              <div className="fm-framewrap">
+                <div className="fm-frame-label"><span className="pip" style={{ background: t.accent }}></span> Mobile · Tablet <span className="dim">— tab bar + quick-log</span></div>
+                <IOSDevice>
+                  <App platform="mobile" t={t} />
+                </IOSDevice>
+              </div>
+            </div>
+          </div>
+
+          <TweaksPanel>
+            <TweakSection label="Brand" />
+            <TweakColor label="Accent" value={t.accent}
+              options={['#ff5a36', '#2f6bff', '#1f9d62', '#7a5cff', '#e0245e']}
+              onChange={v => setTweak('accent', v)} />
+            <TweakSection label="Surfaces" />
+            <TweakRadio label="Card style" value={t.cards}
+              options={['elevated', 'flat', 'outline']}
+              onChange={v => setTweak('cards', v)} />
+            <TweakSection label="Interaction & charts" />
+            <TweakRadio label="Set logging" value={t.logControl}
+              options={['steppers', 'direct']}
+              onChange={v => setTweak('logControl', v)} />
+            <TweakRadio label="Muscle balance" value={t.balanceView}
+              options={['bars', 'radar']}
+              onChange={v => setTweak('balanceView', v)} />
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Showcase />);
+  </script>
+</body>
+</html>
