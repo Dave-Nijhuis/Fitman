@@ -1,11 +1,26 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+from database import SessionLocal
+from seed import seed_exercises
+
 load_dotenv()
 
-app = FastAPI(title="Fitman API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        seed_exercises(db)
+    finally:
+        db.close()
+    yield
+
+
+app = FastAPI(title="Fitman API", lifespan=lifespan)
 
 origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
 
