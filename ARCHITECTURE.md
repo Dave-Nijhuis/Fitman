@@ -53,6 +53,9 @@ Fitman/
 │   ├── models/              # SQLAlchemy database models
 │   ├── schemas/             # Pydantic request/response schemas
 │   ├── database.py          # DB connection and session setup
+│   ├── alembic/             # Database migrations
+│   │   └── versions/        # One file per schema change
+│   ├── alembic.ini          # Alembic configuration
 │   └── requirements.txt
 │
 ├── frontend/
