@@ -48,9 +48,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure.
 
 ```bash
 # Backend (in /backend)
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+alembic upgrade head
 fastapi dev main.py
 
 # Frontend (in /frontend)
