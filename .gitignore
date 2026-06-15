@@ -1,0 +1,22 @@
+# Environment — never commit real credentials
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Database — lives in a Docker volume, not the repo
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
