@@ -4,6 +4,7 @@ import { CheckCircle2 } from 'lucide-react'
 import { getExercises, type Exercise } from '../api/exercises'
 import { getLastSet, logSet, type LogEntry } from '../api/logs'
 import { endSession } from '../api/workoutSessions'
+import RestTimer from '../components/RestTimer'
 
 interface Inputs {
   weight: string
@@ -23,6 +24,8 @@ export default function ActiveWorkoutPage() {
   const [sessionLogs, setSessionLogs] = useState<Record<number, LogEntry[]>>({})
   const [inputs, setInputs] = useState<Record<number, Inputs>>({})
   const [finishing, setFinishing] = useState(false)
+  const [restActive, setRestActive] = useState(false)
+  const [restKey, setRestKey] = useState(0)
 
   useEffect(() => {
     if (!session) { navigate('/'); return }
@@ -47,6 +50,8 @@ export default function ActiveWorkoutPage() {
       ...prev,
       [exerciseId]: [...(prev[exerciseId] ?? []), entry],
     }))
+    setRestActive(true)
+    setRestKey(k => k + 1)
   }
 
   async function handleFinish() {
@@ -139,6 +144,8 @@ export default function ActiveWorkoutPage() {
           )
         })}
       </main>
+
+      {restActive && <RestTimer key={restKey} onDismiss={() => setRestActive(false)} />}
     </div>
   )
 }
