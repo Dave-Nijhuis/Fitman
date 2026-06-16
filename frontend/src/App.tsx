@@ -1,12 +1,33 @@
-export default function App() {
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { getToken } from './api/client'
+import LoginPage from './pages/LoginPage'
+import HomePage from './pages/HomePage'
+import ActiveWorkoutPage from './pages/ActiveWorkoutPage'
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return Boolean(getToken()) ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+function Placeholder({ label }: { label: string }) {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-[var(--color-text)]">
-          Fit<span className="text-[var(--color-accent)]">man</span>
-        </h1>
-        <p className="mt-2 text-[var(--color-muted)]">Your self-hosted fitness tracker</p>
-      </div>
+      <p className="text-[var(--color-muted)]">{label} coming soon.</p>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+        <Route path="/workout/:sessionId" element={<ProtectedRoute><ActiveWorkoutPage /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><Placeholder label="History" /></ProtectedRoute>} />
+        <Route path="/progress" element={<ProtectedRoute><Placeholder label="Progress" /></ProtectedRoute>} />
+        <Route path="/library" element={<ProtectedRoute><Placeholder label="Library" /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to={Boolean(getToken()) ? '/' : '/login'} replace />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
