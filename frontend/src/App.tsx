@@ -1,12 +1,30 @@
-export default function App() {
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { getToken } from './api/client'
+import LoginPage from './pages/LoginPage'
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return Boolean(getToken()) ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+function Dashboard() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-[var(--color-text)]">
-          Fit<span className="text-[var(--color-accent)]">man</span>
-        </h1>
-        <p className="mt-2 text-[var(--color-muted)]">Your self-hosted fitness tracker</p>
-      </div>
+      <p className="text-[var(--color-muted)]">Dashboard coming soon.</p>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+        />
+        <Route path="*" element={<Navigate to={Boolean(getToken()) ? '/dashboard' : '/login'} replace />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
