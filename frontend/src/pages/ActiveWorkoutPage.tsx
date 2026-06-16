@@ -5,6 +5,7 @@ import { getExercises, type Exercise } from '../api/exercises'
 import { getLastSet, logSet, type LogEntry } from '../api/logs'
 import { endSession } from '../api/workoutSessions'
 import RestTimer from '../components/RestTimer'
+import FinishWorkoutSheet from '../components/FinishWorkoutSheet'
 
 interface Inputs {
   weight: string
@@ -23,6 +24,7 @@ export default function ActiveWorkoutPage() {
   const [lastSets, setLastSets] = useState<Record<number, LogEntry | null>>({})
   const [sessionLogs, setSessionLogs] = useState<Record<number, LogEntry[]>>({})
   const [inputs, setInputs] = useState<Record<number, Inputs>>({})
+  const [showSummary, setShowSummary] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [restActive, setRestActive] = useState(false)
   const [restKey, setRestKey] = useState(0)
@@ -54,7 +56,11 @@ export default function ActiveWorkoutPage() {
     setRestKey(k => k + 1)
   }
 
-  async function handleFinish() {
+  function handleFinish() {
+    setShowSummary(true)
+  }
+
+  async function handleConfirmFinish() {
     setFinishing(true)
     try {
       await endSession(id)
@@ -146,6 +152,17 @@ export default function ActiveWorkoutPage() {
       </main>
 
       {restActive && <RestTimer key={restKey} onDismiss={() => setRestActive(false)} />}
+
+      {showSummary && (
+        <FinishWorkoutSheet
+          session={session}
+          exercises={exercises}
+          sessionLogs={sessionLogs}
+          onConfirm={handleConfirmFinish}
+          onCancel={() => setShowSummary(false)}
+          loading={finishing}
+        />
+      )}
     </div>
   )
 }
