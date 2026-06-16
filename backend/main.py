@@ -9,6 +9,7 @@ from seed import seed_exercises
 from routers import auth as auth_router
 from routers import exercises as exercises_router
 from routers import sessions as sessions_router
+from routers import logs as logs_router
 
 load_dotenv()
 
@@ -39,6 +40,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(exercises_router.router)
 app.include_router(sessions_router.router)
+app.include_router(logs_router.router)
 
 
 @app.get("/health")
