@@ -7,6 +7,7 @@ import os
 from database import SessionLocal
 from seed import seed_exercises
 from routers import auth as auth_router
+from routers import exercises as exercises_router
 
 load_dotenv()
 
@@ -35,6 +36,7 @@ app.add_middleware(
 
 
 app.include_router(auth_router.router)
+app.include_router(exercises_router.router)
 
 
 @app.get("/health")
