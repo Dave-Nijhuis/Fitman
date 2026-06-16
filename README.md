@@ -48,9 +48,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure.
 
 ```bash
 # Backend (in /backend)
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+alembic upgrade head
 fastapi dev main.py
 
 # Frontend (in /frontend)
@@ -72,3 +73,11 @@ All work flows through feature branches → `dev` → `main` via pull request.
 ## Project board
 
 Issues and feature tracking are managed in the [GitHub Project](https://github.com/users/Dave-Nijhuis/projects/3).
+
+## Built with AI
+
+This project is openly built with [Claude](https://claude.ai) as a pair programmer. No pretence — it's a hobbyist app and AI is part of the workflow from architecture to code.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

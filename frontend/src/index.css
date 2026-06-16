@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #ff5a36;
+  --color-bg: #faf9f7;
+  --color-surface: #ffffff;
+  --color-border: #e8e5e0;
+  --color-text: #1a1714;
+  --color-muted: #7a756e;
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
