@@ -12,6 +12,7 @@ venv/
 node_modules/
 dist/
 .next/
+.vite/
 
 # Database — lives in a Docker volume, not the repo
 *.db

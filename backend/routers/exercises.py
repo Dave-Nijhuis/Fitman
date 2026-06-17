@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -30,16 +30,30 @@ def list_sessions(_: str = Depends(get_current_user)) -> list[str]:
 
 @router.get("")
 def list_exercises(
-    session: str,
+    session: str | None = Query(default=None),
+    search: str | None = Query(default=None),
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ) -> list[ExerciseOut]:
-    if session not in SESSIONS:
+    if session is not None and session not in SESSIONS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown session")
-    exercises = (
-        db.query(Exercise)
-        .filter(Exercise.session == session)
-        .order_by(Exercise.position)
-        .all()
-    )
-    return exercises
+
+    query = db.query(Exercise)
+    if session is not None:
+        query = query.filter(Exercise.session == session)
+    if search is not None:
+        query = query.filter(Exercise.name.ilike(f"%{search}%"))
+
+    return query.order_by(Exercise.session, Exercise.position).all()
+
+
+@router.get("/{exercise_id}")
+def get_exercise(
+    exercise_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(get_current_user),
+) -> ExerciseOut:
+    exercise = db.get(Exercise, exercise_id)
+    if not exercise:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
+    return exercise

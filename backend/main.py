@@ -10,6 +10,9 @@ from routers import auth as auth_router
 from routers import exercises as exercises_router
 from routers import sessions as sessions_router
 from routers import logs as logs_router
+from routers import progress as progress_router
+from routers import measurements as measurements_router
+from routers import cardio as cardio_router
 
 load_dotenv()
 
@@ -41,6 +44,9 @@ app.include_router(auth_router.router)
 app.include_router(exercises_router.router)
 app.include_router(sessions_router.router)
 app.include_router(logs_router.router)
+app.include_router(progress_router.router)
+app.include_router(measurements_router.router)
+app.include_router(cardio_router.router)
 
 
 @app.get("/health")
