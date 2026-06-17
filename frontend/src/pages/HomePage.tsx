@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell, Activity } from 'lucide-react'
 import { getSessions } from '../api/exercises'
 import { startSession } from '../api/workoutSessions'
 import BottomNav from '../components/BottomNav'
@@ -40,6 +40,26 @@ export default function HomePage() {
       </header>
 
       <main className="px-4 space-y-3">
+        <div
+          className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)] bg-opacity-10 flex items-center justify-center">
+              <Activity size={18} className="text-[var(--color-accent)]" />
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-text)]">Cardio</p>
+              <p className="text-sm text-[var(--color-muted)]">Run · Bike · Swim · more</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/cardio')}
+            className="px-4 py-2 bg-[var(--color-accent)] text-white text-sm font-semibold rounded-xl"
+          >
+            Log
+          </button>
+        </div>
+
         {sessions.map(session => (
           <div
             key={session}
