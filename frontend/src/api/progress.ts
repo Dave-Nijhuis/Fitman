@@ -25,6 +25,21 @@ export interface PersonalRecord {
   date: string
 }
 
+export interface ConsistencyDay {
+  date: string
+  trained: boolean
+}
+
+export interface ConsistencyWeek {
+  week: string
+  days: ConsistencyDay[]
+}
+
+export interface MuscleBalance {
+  muscle: string
+  percentage: number
+}
+
 export function getStrengthProgression(exerciseId: number): Promise<StrengthData> {
   return request<StrengthData>(`/api/progress/strength?exercise_id=${exerciseId}`)
 }
@@ -35,4 +50,12 @@ export function getVolume(): Promise<VolumePoint[]> {
 
 export function getPRs(): Promise<PersonalRecord[]> {
   return request<PersonalRecord[]>('/api/progress/prs')
+}
+
+export function getConsistency(): Promise<ConsistencyWeek[]> {
+  return request<ConsistencyWeek[]>('/api/progress/consistency')
+}
+
+export function getBalance(): Promise<MuscleBalance[]> {
+  return request<MuscleBalance[]>('/api/progress/balance')
 }
