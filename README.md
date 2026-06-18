@@ -94,6 +94,45 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml down
 ```
 
+### Backups
+
+Run a backup manually at any time (safe while the app is live):
+
+```bash
+chmod +x scripts/backup.sh
+./scripts/backup.sh
+```
+
+Backups are saved to `backups/fitman_YYYYMMDD_HHMMSS.db`. The script keeps the last 7 and deletes older ones automatically.
+
+**Set up a daily automatic backup with cron:**
+
+```bash
+crontab -e
+```
+
+Add this line to run every day at 3am:
+
+```
+0 3 * * * /path/to/Fitman/scripts/backup.sh >> /path/to/Fitman/backups/backup.log 2>&1
+```
+
+**Restoring from a backup:**
+
+```bash
+# 1. Stop the app
+docker compose -f docker-compose.prod.yml down
+
+# 2. Copy the backup into the Docker volume
+docker run --rm \
+  -v fitman_db_data:/data \
+  -v $(pwd)/backups:/backups \
+  alpine cp /backups/fitman_YYYYMMDD_HHMMSS.db /data/fitman.db
+
+# 3. Start the app again
+docker compose -f docker-compose.prod.yml up -d
+```
+
 ---
 
 ## Development setup
