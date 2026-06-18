@@ -18,6 +18,9 @@ dist/
 *.db
 *.sqlite
 
+# Backups — stored locally, not in the repo
+backups/
+
 # OS
 .DS_Store
 Thumbs.db

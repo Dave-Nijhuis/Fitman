@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import os
+import sys
 
 from database import SessionLocal
 from seed import seed_exercises
@@ -14,7 +15,14 @@ from routers import progress as progress_router
 from routers import measurements as measurements_router
 from routers import cardio as cardio_router
 
-load_dotenv()
+load_dotenv(find_dotenv())
+
+_REQUIRED = ["SECRET_KEY", "ADMIN_USERNAME", "ADMIN_PASSWORD"]
+_missing = [v for v in _REQUIRED if not os.getenv(v)]
+if _missing:
+    print(f"ERROR: Missing required environment variables: {', '.join(_missing)}")
+    print("Copy .env.example to .env and fill in the values.")
+    sys.exit(1)
 
 
 @asynccontextmanager
