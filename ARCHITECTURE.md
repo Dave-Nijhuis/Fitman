@@ -9,11 +9,11 @@ Fitman is a two-service web application: a Python REST API and a React single-pa
                          │              Your Home Server            │
                          │                                          │
   iPhone / Laptop        │   ┌─────────────┐   ┌───────────────┐  │
-  ──────────────         │   │   Frontend  │   │    Backend    │  │
-   Tailscale VPN ────────┼──▶│  React SPA  │──▶│   FastAPI     │  │
-                         │   │  Port 3000  │   │   Port 8000   │  │
-                         │   └─────────────┘   └───────┬───────┘  │
-                         │                             │           │
+  ──────────────         │   │    nginx    │   │    Backend    │  │
+   Tailscale VPN ────────┼──▶│  Port 80   │──▶│   FastAPI     │  │
+                         │   │  (static +  │   │   Port 8000   │  │
+                         │   │   proxy)    │   └───────┬───────┘  │
+                         │   └─────────────┘           │           │
                          │                     ┌───────▼───────┐  │
                          │                     │   SQLite DB   │  │
                          │                     │  fitman.db    │  │
@@ -28,18 +28,20 @@ Fitman is a two-service web application: a Python REST API and a React single-pa
 - Serves a REST JSON API consumed by the frontend
 - Handles authentication (JWT tokens)
 - Reads and writes all data to SQLite via SQLAlchemy
-- Runs on port `8000` inside Docker
+- Runs database migrations automatically on startup via Alembic
+- Runs on port `8000` inside Docker (internal only — not exposed to the host)
 
 ### Frontend — React + TypeScript
 
 - Single-page app, mobile-first responsive layout
-- Communicates with the backend API over HTTP
-- Tailwind CSS for styling — optimised for both touch and mouse input
-- Runs on port `3000` inside Docker (served by Nginx in production)
+- Communicates with the backend via nginx proxy (no direct connection to port 8000)
+- Tailwind CSS v4 for styling
+- In production: built to static files and served by nginx
+- In development: Vite dev server on port `5173` with `/api` proxy to backend
 
 ### Database — SQLite
 
-- Single file (`fitman.db`) stored in a Docker volume
+- Single file (`fitman.db`) stored in a Docker volume (`db_data`)
 - Easy to back up: just copy the file
 - Sufficient for a single-user app — no separate database server needed
 
@@ -48,27 +50,44 @@ Fitman is a two-service web application: a Python REST API and a React single-pa
 ```
 Fitman/
 ├── backend/
-│   ├── main.py              # FastAPI app entry point
-│   ├── routers/             # API route handlers (workouts, exercises, etc.)
-│   ├── models/              # SQLAlchemy database models
-│   ├── schemas/             # Pydantic request/response schemas
+│   ├── main.py              # FastAPI app entry point + startup validation
+│   ├── auth.py              # JWT creation and verification
 │   ├── database.py          # DB connection and session setup
+│   ├── seed.py              # Initial exercise data
+│   ├── entrypoint.sh        # Docker entrypoint: runs migrations then uvicorn
+│   ├── routers/             # API route handlers
+│   │   ├── auth.py          # POST /api/auth/login
+│   │   ├── exercises.py     # GET /api/exercises
+│   │   ├── sessions.py      # Workout session management
+│   │   ├── logs.py          # Set logging
+│   │   ├── progress.py      # Progress calculations
+│   │   ├── measurements.py  # Body measurements
+│   │   └── cardio.py        # Cardio logging
+│   ├── models/              # SQLAlchemy database models
+│   │   ├── exercise.py
+│   │   ├── workout.py
+│   │   ├── cardio.py
+│   │   └── measurement.py
 │   ├── alembic/             # Database migrations
 │   │   └── versions/        # One file per schema change
-│   ├── alembic.ini          # Alembic configuration
+│   ├── alembic.ini
+│   ├── Dockerfile
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/           # Top-level route pages
-│   │   ├── components/      # Reusable UI components
-│   │   ├── hooks/           # Custom React hooks (data fetching, etc.)
+│   │   ├── components/      # Reusable UI components (BottomNav, RestTimer, etc.)
 │   │   └── api/             # API client functions
-│   ├── package.json
-│   └── tailwind.config.js
+│   ├── nginx.conf           # nginx config used in production Docker image
+│   ├── Dockerfile.prod      # Multi-stage: Node build → nginx serve
+│   ├── Dockerfile           # Dev only: Vite dev server
+│   └── package.json
 │
-├── docker-compose.yml       # Orchestrates backend + frontend containers
-├── .env.example             # Template for environment variables
+├── docker-compose.yml       # Development: Vite dev server + backend
+├── docker-compose.prod.yml  # Production: nginx static build + backend
+├── .env                     # Secrets and config — never committed (gitignored)
+├── .env.example             # Template documenting all variables
 ├── README.md
 ├── ARCHITECTURE.md
 └── DESIGN.md
@@ -82,15 +101,11 @@ Fitman/
 exercises
   id         INTEGER PRIMARY KEY
   name       TEXT NOT NULL          -- e.g. "Flat DB Bench Press"
-  muscles    TEXT                   -- e.g. "Chest, Front delt, Triceps"
+  muscles    TEXT                   -- e.g. "Chest, Front Delt, Triceps"
   session    TEXT NOT NULL          -- "Push A" | "Pull A" | "Legs A"
   position   INTEGER NOT NULL       -- display order within the session
   type       TEXT NOT NULL          -- "weight" | "bodyweight"
   equip      TEXT NOT NULL          -- "Dumbbell" | "Bodyweight"
-
-  -- Library covers dumbbell + bodyweight exercises only.
-  -- No gym machines, cables, or barbells. Adding new equipment types
-  -- is a future extension via new seed rows.
 
 workout_sessions
   id          INTEGER PRIMARY KEY
@@ -104,7 +119,7 @@ logs
   session_id  INTEGER REFERENCES workout_sessions(id)
   weight      REAL NOT NULL          -- kg (0 for bodyweight exercises)
   reps        INTEGER NOT NULL
-  logged_at   TEXT DEFAULT (datetime('now'))
+  logged_at   TEXT NOT NULL
 ```
 
 ### Cardio
@@ -118,11 +133,11 @@ cardio_sessions
 cardio_logs
   id           INTEGER PRIMARY KEY
   session_id   INTEGER REFERENCES cardio_sessions(id)
-  activity     TEXT NOT NULL          -- e.g. "Treadmill Run", "Rowing Machine"
-  distance_m   REAL                   -- metres (null if not applicable)
-  duration_s   INTEGER                -- seconds
+  activity     TEXT NOT NULL          -- "Run" | "Walk" | "Bike" | "Swim" | "Row" | "Other"
+  distance_m   REAL                   -- metres (null if not tracked)
+  duration_s   INTEGER                -- seconds (null if not tracked)
   notes        TEXT
-  logged_at    TEXT DEFAULT (datetime('now'))
+  logged_at    TEXT NOT NULL
 ```
 
 ### Body measurements
@@ -130,99 +145,98 @@ cardio_logs
 ```
 body_measurements
   id           INTEGER PRIMARY KEY
-  recorded_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  recorded_at  TEXT NOT NULL
   weight_kg    REAL
   body_fat_pct REAL
   height_cm    REAL
   bone_mass_kg REAL
   notes        TEXT
-
-  -- Additional measurement types (muscle mass %, waist cm, etc.)
-  -- can be added as new columns via Alembic migrations.
 ```
 
 ## API routes
 
 ```
-# Strength
-GET    /api/exercises/sessions           List session names (Push A, Pull A, Legs A)
-GET    /api/exercises?session=Push+A     Exercises in a session, ordered by position
-POST   /api/sessions                     Start a workout session
-PATCH  /api/sessions/{id}/end            Mark a session as complete
-GET    /api/logs?exercise_id=1           All logged sets for an exercise
-GET    /api/logs/last/{exercise_id}      Most recent set (for PREV column in active workout)
-POST   /api/logs                         Save a set { exercise_id, session_id, weight, reps }
+# Auth
+POST   /api/auth/login                   Returns JWT token
 
-# Progress (computed — not stored)
-GET    /api/progress/strength            Estimated 1RM over time per lift (Epley formula)
-GET    /api/progress/volume              Total kg lifted per week
-GET    /api/progress/consistency         Heatmap data (days trained per week, last 17 weeks)
-GET    /api/progress/balance             Volume % breakdown by muscle group
-GET    /api/progress/prs                 Personal records per exercise
+# Exercises
+GET    /api/exercises/sessions            List session names (Push A, Pull A, Legs A)
+GET    /api/exercises                     All exercises (optional ?session= and ?search= filters)
+GET    /api/exercises/{id}               Single exercise by ID
+
+# Strength logging
+POST   /api/sessions                      Start a workout session
+PATCH  /api/sessions/{id}/end            End a workout session
+GET    /api/sessions                      List completed sessions with volume + set count
+GET    /api/sessions/{id}/logs           All logs for a session
+POST   /api/logs                          Log a set { exercise_id, session_id, weight, reps }
+GET    /api/logs/last/{exercise_id}      Most recent set for an exercise
+
+# Progress
+GET    /api/progress/strength?exercise_id=X   Estimated 1RM over time (Epley formula)
+GET    /api/progress/volume                    Total kg lifted per week
+GET    /api/progress/consistency              17-week training heatmap data
+GET    /api/progress/balance                  Volume % breakdown by muscle group
+GET    /api/progress/prs                      Personal records per exercise
 
 # Cardio
-POST   /api/cardio/sessions              Start a cardio session
-PATCH  /api/cardio/sessions/{id}/end     End a cardio session
-POST   /api/cardio/logs                  Log an activity { session_id, activity, distance_m, duration_s }
+GET    /api/cardio/activities             List supported activity types
+POST   /api/cardio                        Log a cardio entry { activity, distance_m, duration_s, notes }
+GET    /api/cardio                        All cardio entries (newest first)
+DELETE /api/cardio/{id}                  Delete a cardio entry
 
 # Body measurements
-GET    /api/measurements                 All recorded measurements (newest first)
-POST   /api/measurements                 Record a measurement { weight_kg, body_fat_pct, ... }
+POST   /api/measurements                  Log a measurement { weight_kg, body_fat_pct, ... }
+GET    /api/measurements                  All measurements (newest first)
+DELETE /api/measurements/{id}            Delete a measurement
+
+# System
+GET    /health                            Health check
 ```
 
-## Seed data
+## Environment variables
 
-On first run the database is seeded with a Push/Pull/Legs A programme using
-dumbbells and bodyweight exercises only — no machines, cables, or barbells.
+All configuration lives in `.env` at the project root. See `.env.example` for a documented template.
 
-```
-Push A   Flat DB Bench Press (weight) · Incline DB Press (weight)
-         Seated DB Shoulder Press (weight) · DB Lateral Raise (weight)
-         Overhead Triceps Extension (weight) · Push-Up (bodyweight)
-         Chest Dip (bodyweight)
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `SECRET_KEY` | ✅ | — | Random string for signing JWT tokens |
+| `ADMIN_USERNAME` | ✅ | — | Login username |
+| `ADMIN_PASSWORD` | ✅ | — | Login password |
+| `JWT_EXPIRE_DAYS` | | `7` | Token validity in days |
+| `DATA_DIR` | | `./data` | SQLite file location (`/app/data` in Docker) |
+| `CORS_ORIGINS` | | `http://localhost:3000` | Allowed frontend origins |
 
-Pull A   One-Arm DB Row (weight) · Chest-Supported DB Row (weight)
-         DB Pullover (weight) · DB Rear Delt Fly (weight)
-         Incline DB Curl (weight) · DB Hammer Curl (weight)
-         Pull-Up (bodyweight)
-
-Legs A   DB Goblet Squat (weight) · Bulgarian Split Squat (weight)
-         DB Reverse Lunge (weight) · Romanian Deadlift (weight)
-         Glute Bridge (bodyweight) · Single-Leg Calf Raise (bodyweight)
-```
+The backend refuses to start if any required variable is missing.
 
 ## Auth flow
 
-1. User logs in with username + password
+1. User logs in with username + password → `POST /api/auth/login`
 2. Backend returns a JWT access token
-3. Frontend stores the token and sends it in the `Authorization` header on every API request
-4. Token expires after a configurable time (default: 7 days) — user logs in again
+3. Frontend stores the token in localStorage and sends it as `Authorization: Bearer <token>` on every request
+4. Token expires after `JWT_EXPIRE_DAYS` days — user logs in again
 
 Since Tailscale already restricts who can reach the server, JWT here primarily prevents accidents rather than acting as the sole security layer.
 
 ## Docker Compose
 
-```yaml
-# docker-compose.yml (simplified overview)
-services:
-  backend:
-    build: ./backend
-    ports: ["8000:8000"]
-    volumes:
-      - db_data:/app/data   # SQLite file persists here
+Two compose files — one for each environment:
 
-  frontend:
-    build: ./frontend
-    ports: ["3000:3000"]
-    depends_on: [backend]
-
-volumes:
-  db_data:
 ```
+# Development (npm run dev inside Docker, hot reload)
+docker compose up
+
+# Production (static build served by nginx)
+docker compose -f docker-compose.prod.yml up -d
+```
+
+In production, only nginx (port 80) is exposed to the host. The backend runs on an internal Docker network — nginx proxies `/api/` requests to it.
+
+On every container start, `entrypoint.sh` runs `alembic upgrade head` before starting uvicorn, so database migrations apply automatically on deploy.
 
 ## Hosting & access
 
-- The server runs Docker Compose continuously (via `docker compose up -d`)
+- The server runs Docker Compose continuously (`docker compose -f docker-compose.prod.yml up -d`)
 - Tailscale is installed on the server and on your phone/laptop
 - No port forwarding or public IP needed — Tailscale creates a private encrypted network
-- Access the app at `http://fitman` (or whatever Tailscale hostname you configure)
+- Access the app at `http://fitman.local` (or whatever Tailscale hostname you configure)
