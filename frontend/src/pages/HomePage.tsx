@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dumbbell, Activity } from 'lucide-react'
+import { Dumbbell, Activity, Flame, Zap, Clock } from 'lucide-react'
 import { getSessions } from '../api/exercises'
 import { startSession } from '../api/workoutSessions'
+import { getHomeStats, type HomeStats } from '../api/stats'
 
 const SESSION_META: Record<string, { focus: string }> = {
   'Push A': { focus: 'Chest · Shoulders · Triceps' },
@@ -10,13 +11,48 @@ const SESSION_META: Record<string, { focus: string }> = {
   'Legs A': { focus: 'Quads · Glutes · Hamstrings' },
 }
 
+function fmtVol(v: number): string {
+  return v >= 1000 ? `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k` : `${v}`
+}
+
+function StatCard({
+  icon: Icon, label, value, unit, delta, deltaUp,
+}: {
+  icon: React.ElementType
+  label: string
+  value: string | number
+  unit: string
+  delta?: string
+  deltaUp?: boolean
+}) {
+  return (
+    <div className="bg-[var(--color-surface)] rounded-[14px] p-[15px_16px] flex flex-col gap-[2px]"
+      style={{ boxShadow: '0 1px 2px rgba(40,34,24,.04), 0 8px 24px rgba(40,34,24,.05)' }}>
+      <div className="flex items-center gap-[7px] text-[var(--color-muted)] text-[12px] font-bold mb-[5px]">
+        <Icon size={15} strokeWidth={2} />
+        <span className="tracking-[0.05em] uppercase">{label}</span>
+      </div>
+      <div className="font-['DM_Mono',ui-monospace,monospace] text-[26px] font-medium leading-none tracking-[-0.01em]">
+        {value}<span className="text-[13px] text-[var(--color-muted)] ml-[3px]">{unit}</span>
+      </div>
+      {delta && (
+        <div className={`text-[11.5px] font-bold mt-[3px] ${deltaUp ? 'text-[var(--color-good)]' : 'text-[var(--color-accent)]'}`}>
+          {delta}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const [sessions, setSessions] = useState<string[]>([])
   const [starting, setStarting] = useState<string | null>(null)
+  const [stats, setStats] = useState<HomeStats | null>(null)
 
   useEffect(() => {
     getSessions().then(setSessions)
+    getHomeStats().then(setStats)
   }, [])
 
   async function handleStart(session: string) {
@@ -29,16 +65,60 @@ export default function HomePage() {
     }
   }
 
+  const volumeDelta = stats
+    ? stats.prev_week_volume === 0
+      ? undefined
+      : `${stats.week_volume >= stats.prev_week_volume ? '+' : ''}${Math.round((stats.week_volume - stats.prev_week_volume) / stats.prev_week_volume * 100)}% vs last`
+    : undefined
+
   return (
-    <div className="min-h-screen pb-6">
-      <header className="px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold tracking-tight">
+    <div className="pb-6">
+      <header className="px-4 pt-12 pb-4">
+        <h1 className="text-[27px] font-extrabold tracking-tight">
           Fit<span className="text-[var(--color-accent)]">man</span>
         </h1>
-        <p className="text-[var(--color-muted)] mt-1">Choose a session to start</p>
       </header>
 
-      <main className="px-4 space-y-3">
+      <main className="px-4 space-y-4">
+
+        {/* Stats grid */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-[14px]">
+            <StatCard
+              icon={Flame}
+              label="Streak"
+              value={stats.streak}
+              unit="days"
+              delta={stats.streak > 0 ? 'Keep it up' : undefined}
+              deltaUp
+            />
+            <StatCard
+              icon={Dumbbell}
+              label="This week"
+              value={stats.week_workouts}
+              unit="/ 5"
+              delta={stats.week_workouts >= 3 ? 'On track' : undefined}
+              deltaUp
+            />
+            <StatCard
+              icon={Zap}
+              label="Volume"
+              value={fmtVol(stats.week_volume)}
+              unit="kg"
+              delta={volumeDelta}
+              deltaUp={stats.week_volume >= stats.prev_week_volume}
+            />
+            <StatCard
+              icon={Clock}
+              label="Time"
+              value={(stats.week_minutes / 60).toFixed(1).replace(/\.0$/, '')}
+              unit="h"
+              delta={stats.week_minutes > 0 ? `${stats.week_minutes} min` : undefined}
+            />
+          </div>
+        )}
+
+        {/* Session cards */}
         <div
           className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex items-center justify-between"
         >
@@ -84,8 +164,8 @@ export default function HomePage() {
             </button>
           </div>
         ))}
-      </main>
 
+      </main>
     </div>
   )
 }

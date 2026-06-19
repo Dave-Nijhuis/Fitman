@@ -106,9 +106,8 @@ export default function CardioPage() {
           <div>
             <label className="text-xs text-[var(--color-muted)] mb-1.5 block">Distance (km) — optional</label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               placeholder="5.0"
               value={distanceKm}
               onChange={e => setDistanceKm(e.target.value)}
@@ -121,8 +120,8 @@ export default function CardioPage() {
             <label className="text-xs text-[var(--color-muted)] mb-1.5 block">Duration — optional</label>
             <div className="flex gap-2 items-center">
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 placeholder="30"
                 value={durationMin}
                 onChange={e => setDurationMin(e.target.value)}
@@ -130,9 +129,8 @@ export default function CardioPage() {
               />
               <span className="text-sm text-[var(--color-muted)]">min</span>
               <input
-                type="number"
-                min="0"
-                max="59"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
                 value={durationSec}
                 onChange={e => setDurationSec(e.target.value)}
