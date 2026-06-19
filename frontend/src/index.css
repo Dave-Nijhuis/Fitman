@@ -32,3 +32,9 @@ body {
 input, select, textarea {
   font-size: max(16px, 1em);
 }
+
+@keyframes fmFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.fm-fadein { animation: fmFade .35s ease both; }
