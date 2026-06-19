@@ -28,7 +28,7 @@ export default function RestTimer({ onDismiss }: Props) {
   const secs = seconds % 60
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] px-4 pt-4 pb-6 shadow-lg">
+    <div className="sticky bottom-0 w-full bg-[var(--color-surface)] border-t border-[var(--color-border)] px-4 pt-4 pb-6 shadow-lg z-20">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-[var(--color-muted)] uppercase tracking-widest">Rest</p>
