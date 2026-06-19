@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dumbbell, Activity, Flame, Zap, Clock } from 'lucide-react'
 import { getSessions } from '../api/exercises'
-import { startSession } from '../api/workoutSessions'
+import { startSession, saveActiveWorkout } from '../api/workoutSessions'
 import { getHomeStats, type HomeStats } from '../api/stats'
 
 const SESSION_META: Record<string, { focus: string }> = {
@@ -59,6 +59,7 @@ export default function HomePage() {
     setStarting(session)
     try {
       const workout = await startSession(session)
+      saveActiveWorkout(workout.id, session, workout.started_at)
       navigate(`/workout/${workout.id}`, { state: { session, sessionId: workout.id } })
     } finally {
       setStarting(null)

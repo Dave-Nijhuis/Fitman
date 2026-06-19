@@ -1,5 +1,6 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { House, TrendingUp, Clock, BookOpen, Zap, Plus, Settings } from 'lucide-react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { House, TrendingUp, Clock, BookOpen, Zap, Plus, Play, Settings } from 'lucide-react'
+import { getActiveWorkout } from '../api/workoutSessions'
 
 const NAV = [
   { label: 'Home',      icon: House,       path: '/' },
@@ -10,6 +11,9 @@ const NAV = [
 
 export default function Sidebar() {
   const navigate = useNavigate()
+  useLocation() // re-render on navigation to pick up localStorage changes
+
+  const active = getActiveWorkout()
 
   return (
     <aside className="hidden md:flex flex-col w-[236px] shrink-0 bg-[var(--color-surface)] border-r border-[var(--color-border)] h-full px-4 py-[26px]">
@@ -46,11 +50,14 @@ export default function Sidebar() {
       {/* CTA pinned to bottom */}
       <div className="mt-auto flex flex-col gap-2">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => active
+            ? navigate(`/workout/${active.id}`, { state: { session: active.session, sessionId: active.id } })
+            : navigate('/')
+          }
           className="flex items-center justify-center gap-2 w-full py-[13px] px-[18px] rounded-[14px] bg-[var(--color-accent)] text-white font-bold text-[15px]"
         >
-          <Plus size={18} strokeWidth={2.2} />
-          Start workout
+          {active ? <Play size={18} strokeWidth={2.2} fill="#fff" /> : <Plus size={18} strokeWidth={2.2} />}
+          {active ? `Resume ${active.session}` : 'Start workout'}
         </button>
         <button className="flex items-center gap-3 px-3 py-[10px] rounded-xl text-[var(--color-muted)] font-semibold text-[14.5px] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)] transition-colors">
           <Settings size={20} />
