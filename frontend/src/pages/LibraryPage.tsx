@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { getAllExercises, type Exercise } from '../api/exercises'
-import BottomNav from '../components/BottomNav'
 
 const SESSIONS = ['All', 'Push A', 'Pull A', 'Legs A']
 
@@ -27,7 +26,7 @@ export default function LibraryPage() {
   }, [activeSession, debouncedSearch])
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-6">
       <header className="px-4 pt-12 pb-4">
         <h1 className="text-2xl font-bold tracking-tight mb-4">Library</h1>
 
@@ -91,7 +90,6 @@ export default function LibraryPage() {
         )}
       </main>
 
-      <BottomNav />
     </div>
   )
 }

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Dumbbell, Activity } from 'lucide-react'
 import { getSessions } from '../api/exercises'
 import { startSession } from '../api/workoutSessions'
-import BottomNav from '../components/BottomNav'
 
 const SESSION_META: Record<string, { focus: string }> = {
   'Push A': { focus: 'Chest · Shoulders · Triceps' },
@@ -31,7 +30,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-6">
       <header className="px-4 pt-12 pb-6">
         <h1 className="text-2xl font-bold tracking-tight">
           Fit<span className="text-[var(--color-accent)]">man</span>
@@ -87,7 +86,6 @@ export default function HomePage() {
         ))}
       </main>
 
-      <BottomNav />
     </div>
   )
 }
