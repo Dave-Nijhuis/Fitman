@@ -28,6 +28,8 @@ export interface PersonalRecord {
 export interface ConsistencyDay {
   date: string
   trained: boolean
+  session: string | null
+  volume_kg: number | null
 }
 
 export interface ConsistencyWeek {

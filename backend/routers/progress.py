@@ -86,6 +86,8 @@ def volume_over_time(
 class ConsistencyDay(BaseModel):
     date: str
     trained: bool
+    session: str | None = None
+    volume_kg: float | None = None
 
 
 class ConsistencyWeek(BaseModel):
@@ -104,20 +106,31 @@ def consistency(
         .filter(WorkoutSession.started_at >= cutoff.isoformat(), WorkoutSession.ended_at.isnot(None))
         .all()
     )
-    trained_dates = {s.started_at[:10] for s in sessions}
+
+    trained_data: dict[str, dict] = {}
+    for s in sessions:
+        date = s.started_at[:10]
+        logs = db.query(Log).filter(Log.session_id == s.id).all()
+        volume = sum(l.weight * l.reps for l in logs)
+        trained_data[date] = {"session": s.session, "volume_kg": round(volume, 1)}
 
     now = datetime.now(timezone.utc)
     weeks = []
     for i in range(16, -1, -1):
         week_start = now - timedelta(weeks=i)
         week_start = week_start - timedelta(days=week_start.weekday())
-        days = [
-            ConsistencyDay(
-                date=(week_start + timedelta(days=d)).strftime("%Y-%m-%d"),
-                trained=(week_start + timedelta(days=d)).strftime("%Y-%m-%d") in trained_dates,
-            )
-            for d in range(7)
-        ]
+        days = []
+        for d in range(7):
+            date_str = (week_start + timedelta(days=d)).strftime("%Y-%m-%d")
+            if date_str in trained_data:
+                days.append(ConsistencyDay(
+                    date=date_str,
+                    trained=True,
+                    session=trained_data[date_str]["session"],
+                    volume_kg=trained_data[date_str]["volume_kg"],
+                ))
+            else:
+                days.append(ConsistencyDay(date=date_str, trained=False))
         weeks.append(ConsistencyWeek(week=week_start.strftime("%Y-W%V"), days=days))
     return weeks
 

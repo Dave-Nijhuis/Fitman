@@ -1,5 +1,7 @@
 # Fitman
 
+[![CI](https://github.com/Dave-Nijhuis/Fitman/actions/workflows/ci.yml/badge.svg)](https://github.com/Dave-Nijhuis/Fitman/actions/workflows/ci.yml)
+
 A self-hosted fitness tracking app. Log workouts, track progress, own your data.
 
 ## Why self-hosted?

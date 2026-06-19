@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { getToken } from './api/client'
+import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import ActiveWorkoutPage from './pages/ActiveWorkoutPage'
@@ -10,9 +11,9 @@ import LibraryPage from './pages/LibraryPage'
 import CardioPage from './pages/CardioPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  return Boolean(getToken()) ? <>{children}</> : <Navigate to="/login" replace />
+  if (!Boolean(getToken())) return <Navigate to="/login" replace />
+  return <Layout>{children}</Layout>
 }
-
 
 export default function App() {
   return (
