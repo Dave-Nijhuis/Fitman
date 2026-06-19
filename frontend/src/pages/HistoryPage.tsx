@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { getHistory, type WorkoutSessionSummary } from '../api/workoutSessions'
-import BottomNav from '../components/BottomNav'
 
 function formatDate(iso: string): string {
   const date = new Date(iso)
@@ -29,7 +28,7 @@ export default function HistoryPage() {
   }, [])
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-6">
       <header className="px-4 pt-12 pb-6">
         <h1 className="text-2xl font-bold tracking-tight">History</h1>
         <p className="text-[var(--color-muted)] mt-1">{history.length} workouts logged</p>
@@ -61,7 +60,6 @@ export default function HistoryPage() {
         ))}
       </main>
 
-      <BottomNav />
     </div>
   )
 }

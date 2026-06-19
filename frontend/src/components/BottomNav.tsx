@@ -1,34 +1,58 @@
-import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Clock, TrendingUp, BookOpen } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { House, TrendingUp, Clock, BookOpen, Plus } from 'lucide-react'
 
-const tabs = [
-  { label: 'Home',     icon: Home,        path: '/' },
-  { label: 'History',  icon: Clock,       path: '/history' },
-  { label: 'Progress', icon: TrendingUp,  path: '/progress' },
-  { label: 'Library',  icon: BookOpen,    path: '/library' },
+const LEFT  = [
+  { label: 'Home',     icon: House,      path: '/' },
+  { label: 'Progress', icon: TrendingUp, path: '/progress' },
+]
+const RIGHT = [
+  { label: 'History',  icon: Clock,      path: '/history' },
+  { label: 'Library',  icon: BookOpen,   path: '/library' },
 ]
 
 export default function BottomNav() {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+
+  const tab = (label: string, Icon: React.ElementType, path: string) => (
+    <NavLink
+      key={path}
+      to={path}
+      end={path === '/'}
+      className={({ isActive }) =>
+        `flex flex-col items-center gap-1 flex-1 text-[10.5px] font-semibold py-[2px] transition-colors ${
+          isActive ? 'text-[var(--color-accent)]' : 'text-[var(--color-faint)]'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <Icon size={23} strokeWidth={isActive ? 2.2 : 1.9} />
+          {label}
+        </>
+      )}
+    </NavLink>
+  )
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex">
-      {tabs.map(({ label, icon: Icon, path }) => {
-        const active = pathname === path
-        return (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-              active ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]'
-            }`}
-          >
-            <Icon size={20} />
-            {label}
-          </button>
-        )
-      })}
+    <nav
+      className="md:hidden relative z-30 shrink-0 flex justify-around items-stretch px-[10px] pt-[9px] pb-[26px] border-t border-[var(--color-border)]"
+      style={{ background: 'rgba(255,255,255,0.86)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)' }}
+    >
+      {LEFT.map(({ label, icon, path }) => tab(label, icon, path))}
+
+      {/* Centre FAB */}
+      <div className="flex flex-col items-center flex-1" style={{ marginTop: -34 }}>
+        <button
+          onClick={() => navigate('/')}
+          className="w-[52px] h-[52px] rounded-full bg-[var(--color-accent)] flex items-center justify-center"
+          style={{ boxShadow: 'color-mix(in srgb, var(--color-accent) 42%, transparent) 0 8px 20px' }}
+          aria-label="Start workout"
+        >
+          <Plus size={26} strokeWidth={2.4} color="#fff" />
+        </button>
+      </div>
+
+      {RIGHT.map(({ label, icon, path }) => tab(label, icon, path))}
     </nav>
   )
 }

@@ -13,7 +13,6 @@ import {
   getMeasurements, logMeasurement, deleteMeasurement,
   type Measurement,
 } from '../api/measurements'
-import BottomNav from '../components/BottomNav'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -89,7 +88,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-6">
       <header className="px-4 pt-12 pb-6">
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
       </header>
@@ -357,7 +356,6 @@ export default function ProgressPage() {
 
       </main>
 
-      <BottomNav />
     </div>
   )
 }
