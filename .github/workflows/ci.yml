@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  backend:
+    name: Backend syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check all Python files compile
+        run: |
+          find backend -name "*.py" -not -path "*/.venv/*" -not -path "*/__pycache__/*" \
+            | xargs python -m py_compile
+
+  docker:
+    name: Docker production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create stub .env for build
+        run: |
+          echo "SECRET_KEY=ci_placeholder_key" >> .env
+          echo "ADMIN_USERNAME=ci" >> .env
+          echo "ADMIN_PASSWORD=ci" >> .env
+      - name: Build production images
+        run: docker compose -f docker-compose.prod.yml build
