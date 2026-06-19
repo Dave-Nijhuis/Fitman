@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { Plus, Check, Clock, Dumbbell } from 'lucide-react'
 import { getExercises, type Exercise } from '../api/exercises'
 import { getLastSet, logSet, type LogEntry } from '../api/logs'
-import { endSession } from '../api/workoutSessions'
+import { endSession, clearActiveWorkout, getActiveWorkout, getSessionLogs, type SessionLogEntry } from '../api/workoutSessions'
 import FinishWorkoutSheet from '../components/FinishWorkoutSheet'
 
 interface SetRow {
@@ -56,7 +56,12 @@ export default function ActiveWorkoutPage() {
   const session: string = state?.session ?? ''
   const id = Number(sessionId)
 
-  const startedAt = useRef(Date.now())
+  const startedAt = useRef(
+    (() => {
+      const saved = getActiveWorkout()
+      return saved?.startedAt ? new Date(saved.startedAt).getTime() : Date.now()
+    })()
+  )
   const [elapsed, setElapsed] = useState(0)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [lastSets, setLastSets] = useState<Record<number, LogEntry | null>>({})
@@ -80,23 +85,43 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(tick)
   }, [rest > 0])
 
-  // Load exercises + previous sets
+  // Load exercises, previous sets, and any already-completed sets for this session
   useEffect(() => {
     if (!session) { navigate('/'); return }
-    getExercises(session).then(exs => {
+    Promise.all([getExercises(session), getSessionLogs(id)]).then(([exs, currentLogs]) => {
       setExercises(exs)
+
+      const logsByExercise: Record<number, SessionLogEntry[]> = {}
+      for (const log of currentLogs) {
+        ;(logsByExercise[log.exercise_id] ??= []).push(log)
+      }
+
       Promise.all(exs.map(e => getLastSet(e.id))).then(results => {
         const lastMap: Record<number, LogEntry | null> = {}
         const setsMap: Record<number, SetRow[]> = {}
         exs.forEach((e, i) => {
           const last = results[i]
           lastMap[e.id] = last
-          setsMap[e.id] = Array.from({ length: 3 }, () => ({
-            weight: last ? String(last.weight) : '',
-            reps: last ? String(last.reps) : '',
-            done: false,
-            logEntry: null,
+
+          const doneLogs = logsByExercise[e.id] ?? []
+          const doneRows: SetRow[] = doneLogs.map(log => ({
+            weight: String(log.weight),
+            reps: String(log.reps),
+            done: true,
+            logEntry: log as unknown as LogEntry,
           }))
+
+          const lastDone = doneLogs[doneLogs.length - 1]
+          const prefill = lastDone
+            ? { weight: String(lastDone.weight), reps: String(lastDone.reps) }
+            : { weight: last ? String(last.weight) : '', reps: last ? String(last.reps) : '' }
+
+          const emptyCount = Math.max(3, doneLogs.length + 1) - doneRows.length
+          const emptyRows: SetRow[] = Array.from({ length: emptyCount }, () => ({
+            ...prefill, done: false, logEntry: null,
+          }))
+
+          setsMap[e.id] = [...doneRows, ...emptyRows]
         })
         setLastSets(lastMap)
         setSets(setsMap)
@@ -159,6 +184,7 @@ export default function ActiveWorkoutPage() {
     setFinishing(true)
     try {
       await endSession(id)
+      clearActiveWorkout()
       navigate('/')
     } finally {
       setFinishing(false)

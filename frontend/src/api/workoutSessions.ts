@@ -21,6 +21,23 @@ export interface SessionLogEntry {
   logged_at: string
 }
 
+const ACTIVE_KEY = 'fitman_active_workout'
+
+export function saveActiveWorkout(id: number, session: string, startedAt: string) {
+  localStorage.setItem(ACTIVE_KEY, JSON.stringify({ id, session, startedAt }))
+}
+
+export function clearActiveWorkout() {
+  localStorage.removeItem(ACTIVE_KEY)
+}
+
+export function getActiveWorkout(): { id: number; session: string; startedAt: string } | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
 export function getHistory(): Promise<WorkoutSessionSummary[]> {
   return request<WorkoutSessionSummary[]>('/api/sessions')
 }
