@@ -13,23 +13,63 @@ router = APIRouter(prefix="/api/measurements", tags=["measurements"])
 
 class MeasurementIn(BaseModel):
     recorded_at: datetime | None = None
-    weight_kg: float | None = None
-    body_fat_pct: float | None = None
-    height_cm: float | None = None
-    bone_mass_kg: float | None = None
-    notes: str | None = None
+
+    # Basic
+    weight_kg:   float | None = None
+    height_cm:   float | None = None
+    notes:       str | None = None
+
+    # Whole-body composition
+    body_fat_pct:         float | None = None
+    bmi:                  float | None = None
+    fat_mass_kg:          float | None = None
+    lean_mass_kg:         float | None = None
+    skeletal_muscle_kg:   float | None = None
+    fat_free_weight_kg:   float | None = None
+    body_water_pct:       float | None = None
+    protein_kg:           float | None = None
+    inorganic_salt_kg:    float | None = None
+    bmr_kcal:             float | None = None
+    visceral_fat_grade:   float | None = None
+    subcutaneous_fat_pct: float | None = None
+    body_age:             int | None = None
+    whr_estimate:         float | None = None
+    smi:                  float | None = None
+
+    # Segmental fat (kg)
+    ra_fat_kg:    float | None = None
+    la_fat_kg:    float | None = None
+    trunk_fat_kg: float | None = None
+    rl_fat_kg:    float | None = None
+    ll_fat_kg:    float | None = None
+
+    # Segmental muscle (kg)
+    ra_muscle_kg:    float | None = None
+    la_muscle_kg:    float | None = None
+    trunk_muscle_kg: float | None = None
+    rl_muscle_kg:    float | None = None
+    ll_muscle_kg:    float | None = None
+
+    # Raw impedance 20 kHz (Ω)
+    ra_z20:    float | None = None
+    la_z20:    float | None = None
+    rl_z20:    float | None = None
+    ll_z20:    float | None = None
+    trunk_z20: float | None = None
+
+    # Raw impedance 100 kHz (Ω)
+    ra_z100:    float | None = None
+    la_z100:    float | None = None
+    rl_z100:    float | None = None
+    ll_z100:    float | None = None
+    trunk_z100: float | None = None
 
 
-class MeasurementOut(BaseModel):
+class MeasurementOut(MeasurementIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     recorded_at: datetime
-    weight_kg: float | None
-    body_fat_pct: float | None
-    height_cm: float | None
-    bone_mass_kg: float | None
-    notes: str | None
 
 
 @router.post("", response_model=MeasurementOut, status_code=status.HTTP_201_CREATED)
@@ -38,15 +78,9 @@ def log_measurement(
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
-    recorded_at = body.recorded_at or datetime.now(timezone.utc)
-    measurement = BodyMeasurement(
-        recorded_at=recorded_at,
-        weight_kg=body.weight_kg,
-        body_fat_pct=body.body_fat_pct,
-        height_cm=body.height_cm,
-        bone_mass_kg=body.bone_mass_kg,
-        notes=body.notes,
-    )
+    data = body.model_dump()
+    data["recorded_at"] = data["recorded_at"] or datetime.now(timezone.utc)
+    measurement = BodyMeasurement(**data)
     db.add(measurement)
     db.commit()
     db.refresh(measurement)
