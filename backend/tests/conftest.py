@@ -12,6 +12,7 @@ os.environ.setdefault("DATA_DIR", "/tmp/fitman_test")
 from database import Base, engine  # noqa: E402
 from main import app  # noqa: E402
 
+Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
 
 
