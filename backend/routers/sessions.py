@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models.workout import WorkoutSession, Log
 from models.exercise import Exercise
+from models.workout import Log, WorkoutSession
 from routers.exercises import SESSIONS
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -80,7 +80,7 @@ def list_sessions(
             started_at=w.started_at,
             ended_at=w.ended_at,
             set_count=len(logs),
-            volume_kg=sum(l.weight * l.reps for l in logs),
+            volume_kg=sum(log.weight * log.reps for log in logs),
         ))
     return result
 

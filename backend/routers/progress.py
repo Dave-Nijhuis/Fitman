@@ -111,7 +111,7 @@ def consistency(
     for s in sessions:
         date = s.started_at[:10]
         logs = db.query(Log).filter(Log.session_id == s.id).all()
-        volume = sum(l.weight * l.reps for l in logs)
+        volume = sum(log.weight * log.reps for log in logs)
         trained_data[date] = {"session": s.session, "volume_kg": round(volume, 1)}
 
     now = datetime.now(timezone.utc)
@@ -191,7 +191,7 @@ def personal_records(
         logs = db.query(Log).filter(Log.exercise_id == exercise.id).all()
         if not logs:
             continue
-        best = max(logs, key=lambda l: epley_1rm(l.weight, l.reps))
+        best = max(logs, key=lambda log: epley_1rm(log.weight, log.reps))
         prs.append(PersonalRecord(
             exercise_id=exercise.id,
             exercise_name=exercise.name,

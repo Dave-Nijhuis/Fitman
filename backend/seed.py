@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+
 from models.exercise import Exercise
 
 EXERCISES = [

@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime, timezone
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -69,7 +69,7 @@ def home_stats(
     # This week's volume and duration
     week_session_ids = {s.id for s in week_sessions}
     week_logs = db.query(Log).filter(Log.session_id.in_(week_session_ids)).all() if week_session_ids else []
-    week_volume = round(sum(l.weight * l.reps for l in week_logs), 1)
+    week_volume = round(sum(log.weight * log.reps for log in week_logs), 1)
 
     week_minutes = 0
     for s in week_sessions:
@@ -88,7 +88,7 @@ def home_stats(
     ]
     prev_ids = {s.id for s in prev_sessions}
     prev_logs = db.query(Log).filter(Log.session_id.in_(prev_ids)).all() if prev_ids else []
-    prev_week_volume = round(sum(l.weight * l.reps for l in prev_logs), 1)
+    prev_week_volume = round(sum(log.weight * log.reps for log in prev_logs), 1)
 
     return HomeStats(
         streak=streak,
