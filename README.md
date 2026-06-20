@@ -158,6 +158,10 @@ The frontend dev server runs on `http://localhost:5173` and proxies `/api` reque
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full project structure and API reference.
 
+See [SCALE.md](SCALE.md) for the smart scale BLE protocol, packet decoding, and body composition calculation methodology.
+
+> ⚠️ **Medical disclaimer:** Body composition metrics beyond raw weight are estimates from BIA formulas for personal informational use only. The developers are not medical professionals. Do not use these values for medical diagnosis or treatment.
+
 ## Branch strategy
 
 | Branch | Purpose |
