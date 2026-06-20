@@ -198,6 +198,6 @@ def personal_records(
             weight=best.weight,
             reps=best.reps,
             estimated_1rm=round(epley_1rm(best.weight, best.reps), 2),
-            date=best.logged_at[:10],
+            date=best.logged_at.date().isoformat(),
         ))
     return prs
