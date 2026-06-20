@@ -25,6 +25,12 @@ if _missing:
     print("Copy .env.example to .env and fill in the values.")
     sys.exit(1)
 
+_pwd = os.getenv("ADMIN_PASSWORD", "")
+if not (_pwd.startswith("$2b$") or _pwd.startswith("$2a$")):
+    print("WARNING: ADMIN_PASSWORD is stored as plaintext. Hash it with bcrypt for better security:")
+    print("  python -c \"import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())\"")
+    print("  Then update ADMIN_PASSWORD in your .env with the output.")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
