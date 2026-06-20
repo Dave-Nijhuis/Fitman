@@ -158,6 +158,7 @@ async def main() -> None:
     packet = ffb3_packet[0]
     measurement = decode_ffb3(packet)
     measurement["recorded_at"] = datetime.now(timezone.utc).isoformat()
+    measurement["height_cm"] = float(SCALE_HEIGHT_CM)
 
     print(f"Weight:    {measurement['weight_kg']} kg")
     print(f"Body fat:  {measurement['body_fat_pct']} %")
