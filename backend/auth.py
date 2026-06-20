@@ -2,9 +2,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 import os
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
 
 ALGORITHM = "HS256"
 
@@ -24,6 +24,6 @@ def get_current_user(
         username: str | None = payload.get("sub")
         if username is None:
             raise ValueError
-    except (JWTError, ValueError):
+    except (jwt.InvalidTokenError, ValueError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return username
