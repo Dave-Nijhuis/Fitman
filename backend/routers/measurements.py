@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
@@ -89,16 +90,21 @@ def _apply_formulae(measurement: BodyMeasurement) -> None:
         return
 
     profile = UserProfile(
-        age=age, height_cm=float(height), sex=sex, weight_kg=float(measurement.weight_kg)
+        age=age, height_cm=float(height), sex=sex,
+        weight_kg=cast(float, measurement.weight_kg),
     )
     inputs = ImpedanceInputs(
-        ra_z20=float(measurement.ra_z20), la_z20=float(measurement.la_z20),
-        rl_z20=float(measurement.rl_z20), ll_z20=float(measurement.ll_z20),
-        trunk_z20=float(measurement.trunk_z20),
-        ra_z100=float(measurement.ra_z100), la_z100=float(measurement.la_z100),
-        rl_z100=float(measurement.rl_z100), ll_z100=float(measurement.ll_z100),
-        trunk_z100=float(measurement.trunk_z100),
-        body_fat_pct=float(measurement.body_fat_pct),
+        ra_z20=cast(float, measurement.ra_z20),
+        la_z20=cast(float, measurement.la_z20),
+        rl_z20=cast(float, measurement.rl_z20),
+        ll_z20=cast(float, measurement.ll_z20),
+        trunk_z20=cast(float, measurement.trunk_z20),
+        ra_z100=cast(float, measurement.ra_z100),
+        la_z100=cast(float, measurement.la_z100),
+        rl_z100=cast(float, measurement.rl_z100),
+        ll_z100=cast(float, measurement.ll_z100),
+        trunk_z100=cast(float, measurement.trunk_z100),
+        body_fat_pct=cast(float, measurement.body_fat_pct),
     )
     derived = calculate_all(profile, inputs)
     for field, value in derived.items():
