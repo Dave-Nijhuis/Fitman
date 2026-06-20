@@ -24,3 +24,10 @@ backups/
 # OS
 .DS_Store
 Thumbs.db
+
+# Smart scale — raw BLE packet captures and calibration data contain
+# personal biometric data and should never be committed
+scripts/scale_analysis/*.txt
+scripts/scale_analysis/scale_experiment_results.json
+scripts/*.txt
+scripts/scale_experiment_results.json
