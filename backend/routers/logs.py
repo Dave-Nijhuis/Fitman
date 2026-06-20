@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -70,6 +70,7 @@ def get_last_set(
 @router.get("", response_model=list[LogOut])
 def get_logs(
     exercise_id: int,
+    limit: int = Query(default=200, ge=1, le=1000),
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
@@ -77,5 +78,6 @@ def get_logs(
         db.query(Log)
         .filter(Log.exercise_id == exercise_id)
         .order_by(Log.logged_at.desc())
+        .limit(limit)
         .all()
     )
