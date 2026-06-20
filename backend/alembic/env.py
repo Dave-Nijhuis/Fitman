@@ -1,8 +1,8 @@
 from logging.config import fileConfig
 
+import models  # noqa: F401 — side-effect import, registers models on Base.metadata
 from alembic import context
 from database import Base, engine
-import models  # noqa: F401 — side-effect import, registers models on Base.metadata
 
 config = context.config
 
