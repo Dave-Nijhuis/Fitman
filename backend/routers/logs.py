@@ -27,7 +27,7 @@ class LogOut(BaseModel):
     session_id: int
     weight: float
     reps: int
-    logged_at: str
+    logged_at: datetime
 
 
 @router.post("", response_model=LogOut, status_code=status.HTTP_201_CREATED)
@@ -45,7 +45,7 @@ def log_set(
         session_id=body.session_id,
         weight=body.weight,
         reps=body.reps,
-        logged_at=datetime.now(timezone.utc).isoformat(),
+        logged_at=datetime.now(timezone.utc),
     )
     db.add(log)
     db.commit()

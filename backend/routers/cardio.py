@@ -18,7 +18,7 @@ class CardioIn(BaseModel):
     distance_m: float | None = None
     duration_s: int | None = None
     notes: str | None = None
-    logged_at: str | None = None
+    logged_at: datetime | None = None
 
 
 class CardioOut(BaseModel):
@@ -30,7 +30,7 @@ class CardioOut(BaseModel):
     distance_m: float | None
     duration_s: int | None
     notes: str | None
-    logged_at: str
+    logged_at: datetime
 
 
 @router.get("/activities")
@@ -47,7 +47,7 @@ def log_cardio(
     if body.activity not in ACTIVITIES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown activity")
 
-    now = body.logged_at or datetime.now(timezone.utc).isoformat()
+    now = body.logged_at or datetime.now(timezone.utc)
 
     session = CardioSession(started_at=now, ended_at=now)
     db.add(session)

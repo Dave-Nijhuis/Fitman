@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -56,13 +56,13 @@ def home_stats(
 
     # Streak — all completed sessions ever
     all_sessions = db.query(WorkoutSession).filter(WorkoutSession.ended_at.isnot(None)).all()
-    trained_dates = {s.started_at[:10] for s in all_sessions}
+    trained_dates = {s.started_at.date().isoformat() for s in all_sessions}
     streak = _compute_streak(trained_dates)
 
     # This week's completed sessions
     week_sessions = [
         s for s in all_sessions
-        if week_start <= s.started_at[:10] <= week_end
+        if week_start <= s.started_at.date().isoformat() <= week_end
     ]
     week_workouts = len(week_sessions)
 
@@ -73,18 +73,13 @@ def home_stats(
 
     week_minutes = 0
     for s in week_sessions:
-        if s.started_at and s.ended_at:
-            try:
-                start = datetime.fromisoformat(s.started_at.replace("Z", "+00:00"))
-                end = datetime.fromisoformat(s.ended_at.replace("Z", "+00:00"))
-                week_minutes += int((end - start).total_seconds() / 60)
-            except ValueError:
-                pass
+        if s.ended_at:
+            week_minutes += int((s.ended_at - s.started_at).total_seconds() / 60)
 
     # Previous week volume (for delta)
     prev_sessions = [
         s for s in all_sessions
-        if prev_start <= s.started_at[:10] <= prev_end
+        if prev_start <= s.started_at.date().isoformat() <= prev_end
     ]
     prev_ids = {s.id for s in prev_sessions}
     prev_logs = db.query(Log).filter(Log.session_id.in_(prev_ids)).all() if prev_ids else []

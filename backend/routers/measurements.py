@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/measurements", tags=["measurements"])
 
 
 class MeasurementIn(BaseModel):
-    recorded_at: str | None = None
+    recorded_at: datetime | None = None
     weight_kg: float | None = None
     body_fat_pct: float | None = None
     height_cm: float | None = None
@@ -24,7 +24,7 @@ class MeasurementOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    recorded_at: str
+    recorded_at: datetime
     weight_kg: float | None
     body_fat_pct: float | None
     height_cm: float | None
@@ -38,7 +38,7 @@ def log_measurement(
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
-    recorded_at = body.recorded_at or datetime.now(timezone.utc).isoformat()
+    recorded_at = body.recorded_at or datetime.now(timezone.utc)
     measurement = BodyMeasurement(
         recorded_at=recorded_at,
         weight_kg=body.weight_kg,
