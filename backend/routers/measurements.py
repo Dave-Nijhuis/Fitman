@@ -88,15 +88,17 @@ def _apply_formulae(measurement: BodyMeasurement) -> None:
     if not all(required):
         return
 
-    profile = UserProfile(age=age, height_cm=height, sex=sex, weight_kg=measurement.weight_kg)
+    profile = UserProfile(
+        age=age, height_cm=float(height), sex=sex, weight_kg=float(measurement.weight_kg)
+    )
     inputs = ImpedanceInputs(
-        ra_z20=measurement.ra_z20, la_z20=measurement.la_z20,
-        rl_z20=measurement.rl_z20, ll_z20=measurement.ll_z20,
-        trunk_z20=measurement.trunk_z20,
-        ra_z100=measurement.ra_z100, la_z100=measurement.la_z100,
-        rl_z100=measurement.rl_z100, ll_z100=measurement.ll_z100,
-        trunk_z100=measurement.trunk_z100,
-        body_fat_pct=measurement.body_fat_pct,
+        ra_z20=float(measurement.ra_z20), la_z20=float(measurement.la_z20),
+        rl_z20=float(measurement.rl_z20), ll_z20=float(measurement.ll_z20),
+        trunk_z20=float(measurement.trunk_z20),
+        ra_z100=float(measurement.ra_z100), la_z100=float(measurement.la_z100),
+        rl_z100=float(measurement.rl_z100), ll_z100=float(measurement.ll_z100),
+        trunk_z100=float(measurement.trunk_z100),
+        body_fat_pct=float(measurement.body_fat_pct),
     )
     derived = calculate_all(profile, inputs)
     for field, value in derived.items():
