@@ -44,7 +44,7 @@ def list_exercises(
     if search is not None:
         query = query.filter(Exercise.name.ilike(f"%{search}%"))
 
-    return query.order_by(Exercise.session, Exercise.position).all()
+    return [ExerciseOut.model_validate(e) for e in query.order_by(Exercise.session, Exercise.position).all()]
 
 
 @router.get("/{exercise_id}")
@@ -56,4 +56,4 @@ def get_exercise(
     exercise = db.get(Exercise, exercise_id)
     if not exercise:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
-    return exercise
+    return ExerciseOut.model_validate(exercise)
