@@ -23,17 +23,31 @@ jobs:
         working-directory: frontend
 
   backend:
-    name: Backend syntax check
+    name: Backend quality
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Check all Python files compile
+          cache: pip
+      - name: Install dependencies
         run: |
-          find backend -name "*.py" -not -path "*/.venv/*" -not -path "*/__pycache__/*" \
-            | xargs python -m py_compile
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Type check (mypy)
+        run: mypy .
+      - name: Tests (pytest)
+        run: pytest tests/ -v
+        env:
+          SECRET_KEY: ci-test-secret-key
+          ADMIN_USERNAME: testuser
+          ADMIN_PASSWORD: testpass
+          DATA_DIR: /tmp/fitman_test
 
   docker:
     name: Docker production build
