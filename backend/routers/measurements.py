@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
+from formulas import ImpedanceInputs, UserProfile, calculate_all
 from models.measurement import BodyMeasurement
 
 router = APIRouter(prefix="/api/measurements", tags=["measurements"])
@@ -72,6 +74,35 @@ class MeasurementOut(MeasurementIn):
     recorded_at: datetime
 
 
+def _apply_formulae(measurement: BodyMeasurement) -> None:
+    """If all required inputs are present, calculate and fill derived fields."""
+    age = int(os.getenv("SCALE_AGE", "0"))
+    sex = int(os.getenv("SCALE_SEX", "1"))
+    height = measurement.height_cm or float(os.getenv("SCALE_HEIGHT_CM", "0"))
+
+    required = [age, height, measurement.weight_kg, measurement.body_fat_pct,
+                measurement.ra_z20, measurement.la_z20, measurement.rl_z20,
+                measurement.ll_z20, measurement.trunk_z20,
+                measurement.ra_z100, measurement.la_z100, measurement.rl_z100,
+                measurement.ll_z100, measurement.trunk_z100]
+    if not all(required):
+        return
+
+    profile = UserProfile(age=age, height_cm=height, sex=sex, weight_kg=measurement.weight_kg)
+    inputs = ImpedanceInputs(
+        ra_z20=measurement.ra_z20, la_z20=measurement.la_z20,
+        rl_z20=measurement.rl_z20, ll_z20=measurement.ll_z20,
+        trunk_z20=measurement.trunk_z20,
+        ra_z100=measurement.ra_z100, la_z100=measurement.la_z100,
+        rl_z100=measurement.rl_z100, ll_z100=measurement.ll_z100,
+        trunk_z100=measurement.trunk_z100,
+        body_fat_pct=measurement.body_fat_pct,
+    )
+    derived = calculate_all(profile, inputs)
+    for field, value in derived.items():
+        setattr(measurement, field, value)
+
+
 @router.post("", response_model=MeasurementOut, status_code=status.HTTP_201_CREATED)
 def log_measurement(
     body: MeasurementIn,
@@ -82,6 +113,9 @@ def log_measurement(
     data["recorded_at"] = data["recorded_at"] or datetime.now(timezone.utc)
     measurement = BodyMeasurement(**data)
     db.add(measurement)
+    db.commit()
+    db.refresh(measurement)
+    _apply_formulae(measurement)
     db.commit()
     db.refresh(measurement)
     return measurement
