@@ -14,15 +14,12 @@ from models.measurement import BodyMeasurement
 router = APIRouter(prefix="/api/measurements", tags=["measurements"])
 
 
-class MeasurementIn(BaseModel):
+class _MeasurementFields(BaseModel):
+    """All stored measurement fields — shared by input and output schemas."""
     recorded_at: datetime | None = None
-
-    # Basic
     weight_kg:   float | None = None
     height_cm:   float | None = None
     notes:       str | None = None
-
-    # Whole-body composition
     body_fat_pct:         float | None = None
     bmi:                  float | None = None
     fat_mass_kg:          float | None = None
@@ -38,29 +35,21 @@ class MeasurementIn(BaseModel):
     body_age:             int | None = None
     whr_estimate:         float | None = None
     smi:                  float | None = None
-
-    # Segmental fat (kg)
     ra_fat_kg:    float | None = None
     la_fat_kg:    float | None = None
     trunk_fat_kg: float | None = None
     rl_fat_kg:    float | None = None
     ll_fat_kg:    float | None = None
-
-    # Segmental muscle (kg)
     ra_muscle_kg:    float | None = None
     la_muscle_kg:    float | None = None
     trunk_muscle_kg: float | None = None
     rl_muscle_kg:    float | None = None
     ll_muscle_kg:    float | None = None
-
-    # Raw impedance 20 kHz (Ω)
     ra_z20:    float | None = None
     la_z20:    float | None = None
     rl_z20:    float | None = None
     ll_z20:    float | None = None
     trunk_z20: float | None = None
-
-    # Raw impedance 100 kHz (Ω)
     ra_z100:    float | None = None
     la_z100:    float | None = None
     rl_z100:    float | None = None
@@ -68,17 +57,21 @@ class MeasurementIn(BaseModel):
     trunk_z100: float | None = None
 
 
-class MeasurementOut(MeasurementIn):
+class MeasurementIn(_MeasurementFields):
+    # Transient — used for formula calculation, not stored in DB
+    user_age: int | None = None
+    user_sex: int | None = None  # 1 = male, 0 = female
+
+
+class MeasurementOut(_MeasurementFields):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     recorded_at: datetime
 
 
-def _apply_formulae(measurement: BodyMeasurement) -> None:
+def _apply_formulae(measurement: BodyMeasurement, age: int, sex: int) -> None:
     """If all required inputs are present, calculate and fill derived fields."""
-    age = int(os.getenv("SCALE_AGE", "0"))
-    sex = int(os.getenv("SCALE_SEX", "1"))
     height = measurement.height_cm or float(os.getenv("SCALE_HEIGHT_CM", "0"))
 
     required = [age, height, measurement.weight_kg, measurement.body_fat_pct,
@@ -118,12 +111,15 @@ def log_measurement(
     _: str = Depends(get_current_user),
 ):
     data = body.model_dump()
+    age = data.pop("user_age") or int(os.getenv("SCALE_AGE", "0"))
+    sex_val = data.pop("user_sex")
+    sex = sex_val if sex_val is not None else int(os.getenv("SCALE_SEX", "1"))
     data["recorded_at"] = data["recorded_at"] or datetime.now(timezone.utc)
     measurement = BodyMeasurement(**data)
     db.add(measurement)
     db.commit()
     db.refresh(measurement)
-    _apply_formulae(measurement)
+    _apply_formulae(measurement, age, sex)
     db.commit()
     db.refresh(measurement)
     return measurement
