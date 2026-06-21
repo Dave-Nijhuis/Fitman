@@ -51,7 +51,7 @@ def strength_progression(
 
     daily_best: dict[str, float] = defaultdict(float)
     for log in logs:
-        date = log.logged_at[:10]
+        date = log.logged_at.date().isoformat()
         daily_best[date] = max(daily_best[date], epley_1rm(log.weight, log.reps))
 
     data = [
@@ -76,7 +76,7 @@ def volume_over_time(
     logs = db.query(Log).order_by(Log.logged_at).all()
     weekly: dict[str, float] = defaultdict(float)
     for log in logs:
-        week = datetime.fromisoformat(log.logged_at).strftime("%Y-W%V")
+        week = log.logged_at.strftime("%Y-W%V")
         weekly[week] += log.weight * log.reps
     return [VolumePoint(week=w, volume_kg=round(v, 2)) for w, v in sorted(weekly.items())]
 
@@ -103,15 +103,15 @@ def consistency(
     cutoff = datetime.now(timezone.utc) - timedelta(weeks=17)
     sessions = (
         db.query(WorkoutSession)
-        .filter(WorkoutSession.started_at >= cutoff.isoformat(), WorkoutSession.ended_at.isnot(None))
+        .filter(WorkoutSession.started_at >= cutoff, WorkoutSession.ended_at.isnot(None))
         .all()
     )
 
     trained_data: dict[str, dict] = {}
     for s in sessions:
-        date = s.started_at[:10]
+        date = s.started_at.date().isoformat()
         logs = db.query(Log).filter(Log.session_id == s.id).all()
-        volume = sum(l.weight * l.reps for l in logs)
+        volume = sum(log.weight * log.reps for log in logs)
         trained_data[date] = {"session": s.session, "volume_kg": round(volume, 1)}
 
     now = datetime.now(timezone.utc)
@@ -191,13 +191,13 @@ def personal_records(
         logs = db.query(Log).filter(Log.exercise_id == exercise.id).all()
         if not logs:
             continue
-        best = max(logs, key=lambda l: epley_1rm(l.weight, l.reps))
+        best = max(logs, key=lambda log: epley_1rm(log.weight, log.reps))
         prs.append(PersonalRecord(
             exercise_id=exercise.id,
             exercise_name=exercise.name,
             weight=best.weight,
             reps=best.reps,
             estimated_1rm=round(epley_1rm(best.weight, best.reps), 2),
-            date=best.logged_at[:10],
+            date=best.logged_at.date().isoformat(),
         ))
     return prs

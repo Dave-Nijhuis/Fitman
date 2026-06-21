@@ -1,20 +1,21 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv, find_dotenv
 import os
 import sys
+from contextlib import asynccontextmanager
+
+from dotenv import find_dotenv, load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from database import SessionLocal
-from seed import seed_exercises
 from routers import auth as auth_router
-from routers import exercises as exercises_router
-from routers import sessions as sessions_router
-from routers import logs as logs_router
-from routers import progress as progress_router
-from routers import measurements as measurements_router
 from routers import cardio as cardio_router
+from routers import exercises as exercises_router
+from routers import logs as logs_router
+from routers import measurements as measurements_router
+from routers import progress as progress_router
+from routers import sessions as sessions_router
 from routers import stats as stats_router
+from seed import seed_exercises
 
 load_dotenv(find_dotenv())
 
@@ -24,6 +25,12 @@ if _missing:
     print(f"ERROR: Missing required environment variables: {', '.join(_missing)}")
     print("Copy .env.example to .env and fill in the values.")
     sys.exit(1)
+
+_pwd = os.getenv("ADMIN_PASSWORD", "")
+if not (_pwd.startswith("$2b$") or _pwd.startswith("$2a$")):
+    print("WARNING: ADMIN_PASSWORD is stored as plaintext. Hash it with bcrypt for better security:")
+    print("  python -c \"import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())\"")
+    print("  Then update ADMIN_PASSWORD in your .env with the output.")
 
 
 @asynccontextmanager

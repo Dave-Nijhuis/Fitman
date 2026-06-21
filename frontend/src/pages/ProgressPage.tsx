@@ -73,6 +73,7 @@ function Seg({ value, onChange }: { value: string; onChange: (v: string) => void
 }
 
 export default function ProgressPage() {
+  const [bodyMode, setBodyMode] = useState<'fat' | 'muscle'>('fat')
   const [prs, setPRs] = useState<PersonalRecord[]>([])
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null)
   const [strengthData, setStrengthData] = useState<StrengthData | null>(null)
@@ -331,6 +332,181 @@ export default function ProgressPage() {
             )}
           </Card>
         </div>
+
+        {/* Body composition — silhouette + key metrics */}
+        {(() => {
+          const latest = measurements[0]
+          const prev = measurements[1]
+          if (!latest?.bmi) return null
+
+          const segFat = (k: keyof typeof latest) => latest[k] as number | null
+          const segMuscle = (k: keyof typeof latest) => latest[k] as number | null
+
+          const fatTotal = latest.fat_mass_kg ?? 1
+          const muscleTotal = latest.skeletal_muscle_kg ?? 1
+
+          // Expected segment share (% of total) for colour coding
+          const FAT_EXP  = { ra: 3.5, la: 3.5, rl: 18, ll: 18, trunk: 43 }
+          const MUS_EXP  = { ra: 5,   la: 5,   rl: 22, ll: 22, trunk: 43 }
+
+          function segColor(val: number | null, total: number, exp: number): string {
+            if (!val || !total) return 'var(--color-border)'
+            const pct = (val / total) * 100
+            const diff = pct - exp
+            if (diff > 4)  return '#f97316'   // orange — above range
+            if (diff < -4) return '#60a5fa'   // blue — below range
+            return '#4ade80'                   // green — standard
+          }
+
+          const c = bodyMode === 'fat'
+            ? {
+                ra:    segColor(segFat('ra_fat_kg'),    fatTotal,    FAT_EXP.ra),
+                la:    segColor(segFat('la_fat_kg'),    fatTotal,    FAT_EXP.la),
+                trunk: segColor(segFat('trunk_fat_kg'), fatTotal,    FAT_EXP.trunk),
+                rl:    segColor(segFat('rl_fat_kg'),    fatTotal,    FAT_EXP.rl),
+                ll:    segColor(segFat('ll_fat_kg'),    fatTotal,    FAT_EXP.ll),
+              }
+            : {
+                ra:    segColor(segMuscle('ra_muscle_kg'),    muscleTotal, MUS_EXP.ra),
+                la:    segColor(segMuscle('la_muscle_kg'),    muscleTotal, MUS_EXP.la),
+                trunk: segColor(segMuscle('trunk_muscle_kg'), muscleTotal, MUS_EXP.trunk),
+                rl:    segColor(segMuscle('rl_muscle_kg'),    muscleTotal, MUS_EXP.rl),
+                ll:    segColor(segMuscle('ll_muscle_kg'),    muscleTotal, MUS_EXP.ll),
+              }
+
+          const seg = bodyMode === 'fat'
+            ? { ra: latest.ra_fat_kg, la: latest.la_fat_kg, trunk: latest.trunk_fat_kg, rl: latest.rl_fat_kg, ll: latest.ll_fat_kg }
+            : { ra: latest.ra_muscle_kg, la: latest.la_muscle_kg, trunk: latest.trunk_muscle_kg, rl: latest.rl_muscle_kg, ll: latest.ll_muscle_kg }
+
+          function Trend({ curr, prev: p, lowerBetter = false }: { curr: number | null; prev: number | null; lowerBetter?: boolean }) {
+            if (curr == null || p == null) return null
+            const delta = curr - p
+            if (Math.abs(delta) < 0.01) return null
+            const up = delta > 0
+            const good = lowerBetter ? !up : up
+            return (
+              <span className={`text-[11px] font-bold ml-1 ${good ? 'text-[#22c55e]' : 'text-[#f97316]'}`}>
+                {up ? '↑' : '↓'} {Math.abs(delta).toFixed(1)}
+              </span>
+            )
+          }
+
+          function MetricRow({ label, value, unit, prev: p, lowerBetter }: {
+            label: string; value: number | null; unit: string; prev: number | null; lowerBetter?: boolean
+          }) {
+            if (value == null) return null
+            return (
+              <div className="flex items-center justify-between py-[9px] border-b border-[var(--color-border)] last:border-0">
+                <span className="text-[13px] text-[var(--color-muted)] font-semibold">{label}</span>
+                <span className="text-[13.5px] font-bold text-[var(--color-text)]">
+                  {value}{unit}
+                  <Trend curr={value} prev={p} lowerBetter={lowerBetter} />
+                </span>
+              </div>
+            )
+          }
+
+          return (
+            <>
+              <Card>
+                <CardHead
+                  title="Body composition"
+                  sub={`Segmental analysis · ${latest.recorded_at.slice(0, 10)}`}
+                  right={
+                    <div className="inline-flex bg-[var(--color-border)] p-[3px] rounded-[10px] gap-0.5">
+                      {(['fat', 'muscle'] as const).map(m => (
+                        <button key={m} onClick={() => setBodyMode(m)}
+                          className={`px-[11px] py-[5px] rounded-[7px] text-[12px] font-bold transition-all capitalize ${
+                            bodyMode === m ? 'bg-[var(--color-surface)] text-[var(--color-text)]' : 'text-[var(--color-muted)]'
+                          }`}
+                          style={bodyMode === m ? { boxShadow: '0 1px 3px rgba(0,0,0,.08)' } : undefined}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+
+                <div className="flex gap-4 items-start">
+                  {/* SVG Silhouette */}
+                  <div className="shrink-0 w-[120px]">
+                    <svg viewBox="0 0 160 336" fill="none" className="w-full">
+                      {/* Head */}
+                      <ellipse cx="80" cy="23" rx="21" ry="24" fill="var(--color-border)"/>
+                      {/* Neck */}
+                      <rect x="73" y="44" width="14" height="11" rx="5" fill="var(--color-border)"/>
+                      {/* Left arm — ra (character right, viewer left) */}
+                      <path d="M 5 60 L 22 56 L 20 174 L 2 176 Q 0 174 0 168 L 0 67 Q 0 60 5 60 Z" fill={c.ra}/>
+                      {/* Trunk */}
+                      <path d="M 24 54 L 136 54 Q 142 54 142 60 L 140 172 Q 140 182 132 182 L 28 182 Q 20 182 20 172 L 18 60 Q 18 54 24 54 Z" fill={c.trunk}/>
+                      {/* Right arm — la (character left, viewer right) */}
+                      <path d="M 155 60 L 138 56 L 140 174 L 158 176 Q 160 174 160 168 L 160 67 Q 160 60 155 60 Z" fill={c.la}/>
+                      {/* Left leg — rl */}
+                      <path d="M 22 184 L 72 184 L 70 320 Q 70 328 62 328 L 28 328 Q 20 328 20 320 Z" fill={c.rl}/>
+                      {/* Right leg — ll */}
+                      <path d="M 88 184 L 138 184 L 140 320 Q 140 328 132 328 L 96 328 Q 88 328 88 320 Z" fill={c.ll}/>
+                    </svg>
+
+                    {/* Colour legend */}
+                    <div className="mt-2 space-y-1">
+                      {[['#4ade80', 'Standard'], ['#f97316', 'High'], ['#60a5fa', 'Low']].map(([color, label]) => (
+                        <div key={label} className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                          <span className="text-[10.5px] text-[var(--color-muted)] font-semibold">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Segment values */}
+                  <div className="flex-1 space-y-2">
+                    {[
+                      { label: 'L. Arm', value: seg.ra },
+                      { label: 'R. Arm', value: seg.la },
+                      { label: 'Trunk',  value: seg.trunk },
+                      { label: 'L. Leg', value: seg.rl },
+                      { label: 'R. Leg', value: seg.ll },
+                    ].map(({ label, value }) => value != null && (
+                      <div key={label} className="flex items-center gap-2">
+                        <span className="text-[12px] text-[var(--color-muted)] font-semibold w-[42px] shrink-0">{label}</span>
+                        <div className="flex-1 h-[7px] rounded-full bg-[var(--color-border)] overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, (value / Math.max(...[seg.ra, seg.la, seg.trunk, seg.rl, seg.ll].filter((v): v is number => v != null))) * 100)}%`,
+                              background: bodyMode === 'fat' ? '#f97316' : 'var(--color-accent)',
+                            }}
+                          />
+                        </div>
+                        <span className="text-[12px] font-mono text-[var(--color-text)] w-[38px] text-right">{value.toFixed(1)} kg</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Medical disclaimer */}
+                <p className="mt-4 text-[10.5px] text-[var(--color-faint)] leading-relaxed">
+                  ⚠️ Segmental values are estimates from BIA research formulae. Not for medical use. Consult a healthcare professional.
+                </p>
+              </Card>
+
+              <Card>
+                <CardHead title="Body metrics" sub={prev ? `vs ${prev.recorded_at.slice(0, 10)}` : 'Latest measurement'} />
+                <MetricRow label="Body fat"       value={latest.body_fat_pct}      unit="%" prev={prev?.body_fat_pct ?? null}      lowerBetter />
+                <MetricRow label="Fat mass"       value={latest.fat_mass_kg}       unit=" kg" prev={prev?.fat_mass_kg ?? null}     lowerBetter />
+                <MetricRow label="Lean mass"      value={latest.lean_mass_kg}      unit=" kg" prev={prev?.lean_mass_kg ?? null} />
+                <MetricRow label="Skeletal muscle" value={latest.skeletal_muscle_kg} unit=" kg" prev={prev?.skeletal_muscle_kg ?? null} />
+                <MetricRow label="BMI"            value={latest.bmi}               unit=""   prev={prev?.bmi ?? null}               lowerBetter />
+                <MetricRow label="Body water"     value={latest.body_water_pct}    unit="%" prev={prev?.body_water_pct ?? null} />
+                <MetricRow label="BMR"            value={latest.bmr_kcal}          unit=" kcal" prev={prev?.bmr_kcal ?? null} />
+                <MetricRow label="Visceral fat"   value={latest.visceral_fat_grade} unit=""  prev={prev?.visceral_fat_grade ?? null} lowerBetter />
+                <MetricRow label="Body age"       value={latest.body_age}          unit=" yrs" prev={prev?.body_age ?? null}      lowerBetter />
+                <MetricRow label="WHR estimate"   value={latest.whr_estimate}      unit=""   prev={prev?.whr_estimate ?? null}     lowerBetter />
+              </Card>
+            </>
+          )
+        })()}
 
         {/* Consistency + Balance — side by side on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

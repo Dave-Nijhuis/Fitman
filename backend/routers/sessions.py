@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models.workout import WorkoutSession, Log
 from models.exercise import Exercise
+from models.workout import Log, WorkoutSession
 from routers.exercises import SESSIONS
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -22,8 +22,8 @@ class WorkoutSessionOut(BaseModel):
 
     id: int
     session: str
-    started_at: str
-    ended_at: str | None
+    started_at: datetime
+    ended_at: datetime | None
 
 
 class WorkoutSessionSummary(WorkoutSessionOut):
@@ -39,7 +39,7 @@ class SessionLogEntry(BaseModel):
     exercise_name: str
     weight: float
     reps: int
-    logged_at: str
+    logged_at: datetime
 
 
 @router.post("", response_model=WorkoutSessionOut, status_code=status.HTTP_201_CREATED)
@@ -52,7 +52,7 @@ def start_session(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown session")
     workout = WorkoutSession(
         session=body.session,
-        started_at=datetime.now(timezone.utc).isoformat(),
+        started_at=datetime.now(timezone.utc),
     )
     db.add(workout)
     db.commit()
@@ -80,7 +80,7 @@ def list_sessions(
             started_at=w.started_at,
             ended_at=w.ended_at,
             set_count=len(logs),
-            volume_kg=sum(l.weight * l.reps for l in logs),
+            volume_kg=sum(log.weight * log.reps for log in logs),
         ))
     return result
 
@@ -124,7 +124,7 @@ def end_session(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     if workout.ended_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Session already ended")
-    workout.ended_at = datetime.now(timezone.utc).isoformat()
+    workout.ended_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(workout)
     return workout

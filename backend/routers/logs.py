@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -27,7 +27,7 @@ class LogOut(BaseModel):
     session_id: int
     weight: float
     reps: int
-    logged_at: str
+    logged_at: datetime
 
 
 @router.post("", response_model=LogOut, status_code=status.HTTP_201_CREATED)
@@ -45,7 +45,7 @@ def log_set(
         session_id=body.session_id,
         weight=body.weight,
         reps=body.reps,
-        logged_at=datetime.now(timezone.utc).isoformat(),
+        logged_at=datetime.now(timezone.utc),
     )
     db.add(log)
     db.commit()
@@ -70,6 +70,7 @@ def get_last_set(
 @router.get("", response_model=list[LogOut])
 def get_logs(
     exercise_id: int,
+    limit: int = Query(default=200, ge=1, le=1000),
     db: Session = Depends(get_db),
     _: str = Depends(get_current_user),
 ):
@@ -77,5 +78,6 @@ def get_logs(
         db.query(Log)
         .filter(Log.exercise_id == exercise_id)
         .order_by(Log.logged_at.desc())
+        .limit(limit)
         .all()
     )

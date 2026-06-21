@@ -62,7 +62,8 @@ Fitman/
 │   │   ├── logs.py          # Set logging
 │   │   ├── progress.py      # Progress calculations
 │   │   ├── measurements.py  # Body measurements
-│   │   └── cardio.py        # Cardio logging
+│   │   ├── cardio.py        # Cardio logging
+│   │   └── stats.py         # Home dashboard stats
 │   ├── models/              # SQLAlchemy database models
 │   │   ├── exercise.py
 │   │   ├── workout.py
@@ -72,7 +73,10 @@ Fitman/
 │   │   └── versions/        # One file per schema change
 │   ├── alembic.ini
 │   ├── Dockerfile
-│   └── requirements.txt
+│   ├── requirements.txt
+│   ├── requirements-dev.txt # Dev/CI dependencies (pytest, ruff, mypy)
+│   ├── pyproject.toml       # Ruff and mypy configuration
+│   └── tests/               # pytest test suite
 │
 ├── frontend/
 │   ├── src/
@@ -90,7 +94,8 @@ Fitman/
 ├── .env.example             # Template documenting all variables
 ├── README.md
 ├── ARCHITECTURE.md
-└── DESIGN.md
+├── DESIGN.md
+└── SCALE.md                 # Smart scale BLE protocol documentation
 ```
 
 ## Database schema
@@ -178,6 +183,9 @@ GET    /api/progress/volume                    Total kg lifted per week
 GET    /api/progress/consistency              17-week training heatmap data
 GET    /api/progress/balance                  Volume % breakdown by muscle group
 GET    /api/progress/prs                      Personal records per exercise
+
+# Home stats
+GET    /api/stats/home                    Streak, weekly volume, workouts this week
 
 # Cardio
 GET    /api/cardio/activities             List supported activity types
