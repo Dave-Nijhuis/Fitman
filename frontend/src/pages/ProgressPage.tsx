@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { Plus, Trash2, Award } from 'lucide-react'
+import { Plus, Trash2, Award, ChevronRight } from 'lucide-react'
 import bodyFrontUrl from '../assets/body_front.svg'
 import {
   getStrengthProgression, getVolume, getPRs, getConsistency, getBalance,
@@ -74,6 +74,7 @@ function Seg({ value, onChange }: { value: string; onChange: (v: string) => void
 }
 
 export default function ProgressPage() {
+  const [selectedBodyMetric, setSelectedBodyMetric] = useState<string>('body_fat_pct')
   const [prs, setPRs] = useState<PersonalRecord[]>([])
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null)
   const [strengthData, setStrengthData] = useState<StrengthData | null>(null)
@@ -128,6 +129,26 @@ export default function ProgressPage() {
     .map(m => ({ date: m.recorded_at.slice(0, 10), weight_kg: m.weight_kg }))
 
   const latestWeight = measurements.find(m => m.weight_kg != null)
+
+  function toTrend(key: keyof typeof measurements[0]) {
+    return [...measurements]
+      .reverse()
+      .filter(m => m[key] != null)
+      .map(m => ({ date: m.recorded_at.slice(0, 10), value: m[key] as number }))
+  }
+
+  const allMetricData: Record<string, { date: string; value: number }[]> = {
+    body_fat_pct:       toTrend('body_fat_pct'),
+    fat_mass_kg:        toTrend('fat_mass_kg'),
+    lean_mass_kg:       toTrend('lean_mass_kg'),
+    skeletal_muscle_kg: toTrend('skeletal_muscle_kg'),
+    bmi:                toTrend('bmi'),
+    body_water_pct:     toTrend('body_water_pct'),
+    bmr_kcal:           toTrend('bmr_kcal'),
+    visceral_fat_grade: toTrend('visceral_fat_grade'),
+    body_age:           toTrend('body_age'),
+    whr_estimate:       toTrend('whr_estimate'),
+  }
 
   async function handleLogMeasurement() {
     if (!weightInput && !fatInput) return
@@ -438,21 +459,6 @@ export default function ProgressPage() {
             )
           }
 
-          function MetricRow({ label, value, unit, prev: p, lowerBetter }: {
-            label: string; value: number | null; unit: string; prev: number | null; lowerBetter?: boolean
-          }) {
-            if (value == null) return null
-            return (
-              <div className="flex items-center justify-between py-[9px] border-b border-[var(--color-border)] last:border-0">
-                <span className="text-[13px] text-[var(--color-muted)] font-semibold">{label}</span>
-                <span className="text-[13.5px] font-bold text-[var(--color-text)]">
-                  {value}{unit}
-                  <Trend curr={value} prev={p} lowerBetter={lowerBetter} />
-                </span>
-              </div>
-            )
-          }
-
           return (
             <>
               <Card>
@@ -480,17 +486,93 @@ export default function ProgressPage() {
               </Card>
 
               <Card>
-                <CardHead title="Body metrics" sub={prev ? `vs ${prev.recorded_at.slice(0, 10)}` : 'Latest measurement'} />
-                <MetricRow label="Body fat"       value={latest.body_fat_pct}      unit="%" prev={prev?.body_fat_pct ?? null}      lowerBetter />
-                <MetricRow label="Fat mass"       value={latest.fat_mass_kg}       unit=" kg" prev={prev?.fat_mass_kg ?? null}     lowerBetter />
-                <MetricRow label="Lean mass"      value={latest.lean_mass_kg}      unit=" kg" prev={prev?.lean_mass_kg ?? null} />
-                <MetricRow label="Skeletal muscle" value={latest.skeletal_muscle_kg} unit=" kg" prev={prev?.skeletal_muscle_kg ?? null} />
-                <MetricRow label="BMI"            value={latest.bmi}               unit=""   prev={prev?.bmi ?? null}               lowerBetter />
-                <MetricRow label="Body water"     value={latest.body_water_pct}    unit="%" prev={prev?.body_water_pct ?? null} />
-                <MetricRow label="BMR"            value={latest.bmr_kcal}          unit=" kcal" prev={prev?.bmr_kcal ?? null} />
-                <MetricRow label="Visceral fat"   value={latest.visceral_fat_grade} unit=""  prev={prev?.visceral_fat_grade ?? null} lowerBetter />
-                <MetricRow label="Body age"       value={latest.body_age}          unit=" yrs" prev={prev?.body_age ?? null}      lowerBetter />
-                <MetricRow label="WHR estimate"   value={latest.whr_estimate}      unit=""   prev={prev?.whr_estimate ?? null}     lowerBetter />
+                {(() => {
+                  const METRICS = [
+                    { key: 'body_fat_pct',       label: 'Body fat',        unit: '%',     color: '#f97316', lowerBetter: true,  prev: prev?.body_fat_pct ?? null,       value: latest.body_fat_pct },
+                    { key: 'fat_mass_kg',         label: 'Fat mass',        unit: ' kg',   color: '#f97316', lowerBetter: true,  prev: prev?.fat_mass_kg ?? null,         value: latest.fat_mass_kg },
+                    { key: 'lean_mass_kg',        label: 'Lean mass',       unit: ' kg',   color: '#22c55e', lowerBetter: false, prev: prev?.lean_mass_kg ?? null,        value: latest.lean_mass_kg },
+                    { key: 'skeletal_muscle_kg',  label: 'Skeletal muscle', unit: ' kg',   color: '#22c55e', lowerBetter: false, prev: prev?.skeletal_muscle_kg ?? null,  value: latest.skeletal_muscle_kg },
+                    { key: 'bmi',                 label: 'BMI',             unit: '',      color: '#60a5fa', lowerBetter: true,  prev: prev?.bmi ?? null,                 value: latest.bmi },
+                    { key: 'body_water_pct',      label: 'Body water',      unit: '%',     color: '#60a5fa', lowerBetter: false, prev: prev?.body_water_pct ?? null,      value: latest.body_water_pct },
+                    { key: 'bmr_kcal',            label: 'BMR',             unit: ' kcal', color: '#22c55e', lowerBetter: false, prev: prev?.bmr_kcal ?? null,            value: latest.bmr_kcal },
+                    { key: 'visceral_fat_grade',  label: 'Visceral fat',    unit: '',      color: '#f97316', lowerBetter: true,  prev: prev?.visceral_fat_grade ?? null,  value: latest.visceral_fat_grade },
+                    { key: 'body_age',            label: 'Body age',        unit: ' yrs',  color: '#f97316', lowerBetter: true,  prev: prev?.body_age ?? null,            value: latest.body_age },
+                    { key: 'whr_estimate',        label: 'WHR estimate',    unit: '',      color: '#f97316', lowerBetter: true,  prev: prev?.whr_estimate ?? null,        value: latest.whr_estimate },
+                  ].filter(m => m.value != null)
+
+                  const active = METRICS.find(m => m.key === selectedBodyMetric) ?? METRICS[0]
+                  const activeData = allMetricData[active?.key ?? ''] ?? []
+
+                  return (
+                    <>
+                      <CardHead title="Body metrics" sub={prev ? `vs ${prev.recorded_at.slice(0, 10)}` : 'Latest measurement'} />
+                      <div className="flex flex-col md:flex-row gap-0 md:gap-6">
+
+                        {/* Metric list */}
+                        <div className="md:w-[42%] shrink-0">
+                          {METRICS.map(m => {
+                            const isSelected = m.key === (active?.key)
+                            const hasChart = (allMetricData[m.key]?.length ?? 0) >= 2
+                            const displayVal = typeof m.value === 'number'
+                              ? m.unit === ' kcal' ? Math.round(m.value) : m.value.toFixed(m.unit === '' ? 1 : 1)
+                              : m.value
+                            return (
+                              <div
+                                key={m.key}
+                                onClick={() => hasChart && setSelectedBodyMetric(m.key)}
+                                className={`flex items-center justify-between py-[9px] border-b border-[var(--color-border)] last:border-0 rounded-lg px-2 -mx-2 transition-colors ${
+                                  isSelected ? 'bg-[var(--color-accent-soft)]' : hasChart ? 'hover:bg-[var(--color-bg)] cursor-pointer' : ''
+                                }`}
+                              >
+                                <span className={`text-[13px] font-semibold ${isSelected ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]'}`}>
+                                  {m.label}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[13.5px] font-bold text-[var(--color-text)]">
+                                    {displayVal}{m.unit}
+                                    <Trend curr={m.value as number} prev={m.prev} lowerBetter={m.lowerBetter} />
+                                  </span>
+                                  {hasChart && <ChevronRight size={13} className={isSelected ? 'text-[var(--color-accent)]' : 'text-[var(--color-faint)]'} />}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {/* Chart */}
+                        <div className="flex-1 mt-4 md:mt-0 flex flex-col justify-center">
+                          {activeData.length >= 2 ? (
+                            <>
+                              <div className="text-[12px] text-[var(--color-muted)] font-semibold mb-2">
+                                {active?.label} over time
+                              </div>
+                              <ResponsiveContainer width="100%" height={200}>
+                                <AreaChart data={activeData}>
+                                  <defs>
+                                    <linearGradient id="metricGrad" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor={active?.color} stopOpacity={0.18} />
+                                      <stop offset="95%" stopColor={active?.color} stopOpacity={0} />
+                                    </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                  <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
+                                  <YAxis tick={{ fontSize: 10 }} unit={active?.unit} domain={['auto', 'auto']} />
+                                  <Tooltip formatter={((v: number) => [`${active?.unit === ' kcal' ? Math.round(v) : v}${active?.unit}`, active?.label]) as any} />
+                                  <Area type="monotone" dataKey="value" stroke={active?.color} strokeWidth={2} fill="url(#metricGrad)" dot={{ r: 3, fill: active?.color }} activeDot={{ r: 4 }} />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full min-h-[140px] text-[13px] text-[var(--color-faint)] font-semibold text-center px-4">
+                              Select a metric with 2+ measurements to see its trend.
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    </>
+                  )
+                })()}
               </Card>
             </>
           )
