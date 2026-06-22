@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Plus, Trash2, Award } from 'lucide-react'
+import bodyFrontUrl from '../assets/body_front.svg'
 import {
   getStrengthProgression, getVolume, getPRs, getConsistency, getBalance,
   type StrengthData, type VolumePoint, type PersonalRecord,
@@ -73,7 +74,6 @@ function Seg({ value, onChange }: { value: string; onChange: (v: string) => void
 }
 
 export default function ProgressPage() {
-  const [bodyMode, setBodyMode] = useState<'fat' | 'muscle'>('fat')
   const [prs, setPRs] = useState<PersonalRecord[]>([])
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null)
   const [strengthData, setStrengthData] = useState<StrengthData | null>(null)
@@ -339,44 +339,91 @@ export default function ProgressPage() {
           const prev = measurements[1]
           if (!latest?.bmi) return null
 
-          const segFat = (k: keyof typeof latest) => latest[k] as number | null
-          const segMuscle = (k: keyof typeof latest) => latest[k] as number | null
-
           const fatTotal = latest.fat_mass_kg ?? 1
           const muscleTotal = latest.skeletal_muscle_kg ?? 1
-
-          // Expected segment share (% of total) for colour coding
           const FAT_EXP  = { ra: 3.5, la: 3.5, rl: 18, ll: 18, trunk: 43 }
           const MUS_EXP  = { ra: 5,   la: 5,   rl: 22, ll: 22, trunk: 43 }
 
-          function segColor(val: number | null, total: number, exp: number): string {
-            if (!val || !total) return 'var(--color-border)'
-            const pct = (val / total) * 100
-            const diff = pct - exp
-            if (diff > 4)  return '#f97316'   // orange — above range
-            if (diff < -4) return '#60a5fa'   // blue — below range
-            return '#4ade80'                   // green — standard
+          function evalTag(val: number | null, total: number, exp: number): { tag: string; color: string } {
+            if (!val || !total) return { tag: '—', color: 'text-[var(--color-muted)]' }
+            const diff = (val / total) * 100 - exp
+            if (diff > 4)  return { tag: 'High',     color: 'text-[#f97316]' }
+            if (diff < -4) return { tag: 'Low',      color: 'text-[#60a5fa]' }
+            return           { tag: 'Standard', color: 'text-[#22c55e]' }
           }
 
-          const c = bodyMode === 'fat'
-            ? {
-                ra:    segColor(segFat('ra_fat_kg'),    fatTotal,    FAT_EXP.ra),
-                la:    segColor(segFat('la_fat_kg'),    fatTotal,    FAT_EXP.la),
-                trunk: segColor(segFat('trunk_fat_kg'), fatTotal,    FAT_EXP.trunk),
-                rl:    segColor(segFat('rl_fat_kg'),    fatTotal,    FAT_EXP.rl),
-                ll:    segColor(segFat('ll_fat_kg'),    fatTotal,    FAT_EXP.ll),
-              }
-            : {
-                ra:    segColor(segMuscle('ra_muscle_kg'),    muscleTotal, MUS_EXP.ra),
-                la:    segColor(segMuscle('la_muscle_kg'),    muscleTotal, MUS_EXP.la),
-                trunk: segColor(segMuscle('trunk_muscle_kg'), muscleTotal, MUS_EXP.trunk),
-                rl:    segColor(segMuscle('rl_muscle_kg'),    muscleTotal, MUS_EXP.rl),
-                ll:    segColor(segMuscle('ll_muscle_kg'),    muscleTotal, MUS_EXP.ll),
-              }
+          type FigureItem = { label: string; left: boolean; topPct: number; value: number | null; tag: string; color: string }
 
-          const seg = bodyMode === 'fat'
-            ? { ra: latest.ra_fat_kg, la: latest.la_fat_kg, trunk: latest.trunk_fat_kg, rl: latest.rl_fat_kg, ll: latest.ll_fat_kg }
-            : { ra: latest.ra_muscle_kg, la: latest.la_muscle_kg, trunk: latest.trunk_muscle_kg, rl: latest.rl_muscle_kg, ll: latest.ll_muscle_kg }
+          const BODY_H = 280
+          const BODY_W = Math.round(BODY_H * 260 / 545)
+          const LABEL_W = 100
+
+          function BodyFigure({ title, items }: { title: string; items: FigureItem[] }) {
+            const leftItems  = items.filter(i => i.left)
+            const rightItems = items.filter(i => !i.left)
+            return (
+              <div className="flex-1 min-w-0 flex flex-col items-center">
+                <div className="text-[13px] font-bold text-center mb-3 text-[var(--color-text)]">{title}</div>
+                <div className="flex items-stretch gap-2">
+
+                  {/* Left labels */}
+                  <div className="relative shrink-0" style={{ width: LABEL_W, height: BODY_H }}>
+                    {leftItems.map(item => item.value != null && (
+                      <div key={item.label} className="absolute right-0 flex items-center gap-1.5"
+                        style={{ top: `${item.topPct}%`, transform: 'translateY(-50%)' }}>
+                        <div className="text-right">
+                          <div className="text-[13.5px] font-mono font-bold text-[var(--color-text)] leading-snug">
+                            {item.value.toFixed(1)} kg
+                          </div>
+                          <div className="text-[11px] text-[var(--color-muted)] font-semibold leading-snug">{item.label}</div>
+                          <div className={`text-[11px] font-bold leading-snug ${item.color}`}>{item.tag}</div>
+                        </div>
+                        <div className="w-3 h-px shrink-0 bg-[var(--color-border)]" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Body image */}
+                  <div className="shrink-0" style={{ width: BODY_W, height: BODY_H }}>
+                    <img src={bodyFrontUrl} alt="" style={{ height: '100%', width: 'auto' }} />
+                  </div>
+
+                  {/* Right labels */}
+                  <div className="relative shrink-0" style={{ width: LABEL_W, height: BODY_H }}>
+                    {rightItems.map(item => item.value != null && (
+                      <div key={item.label} className="absolute left-0 flex items-center gap-1.5"
+                        style={{ top: `${item.topPct}%`, transform: 'translateY(-50%)' }}>
+                        <div className="w-3 h-px shrink-0 bg-[var(--color-border)]" />
+                        <div>
+                          <div className="text-[13.5px] font-mono font-bold text-[var(--color-text)] leading-snug">
+                            {item.value.toFixed(1)} kg
+                          </div>
+                          <div className="text-[11px] text-[var(--color-muted)] font-semibold leading-snug">{item.label}</div>
+                          <div className={`text-[11px] font-bold leading-snug ${item.color}`}>{item.tag}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+              </div>
+            )
+          }
+
+          const fatItems: FigureItem[] = [
+            { label: 'L. Arm', left: true,  topPct: 32, value: latest.la_fat_kg,    ...evalTag(latest.la_fat_kg,    fatTotal, FAT_EXP.la) },
+            { label: 'R. Arm', left: false, topPct: 32, value: latest.ra_fat_kg,    ...evalTag(latest.ra_fat_kg,    fatTotal, FAT_EXP.ra) },
+            { label: 'Trunk',  left: true,  topPct: 51, value: latest.trunk_fat_kg, ...evalTag(latest.trunk_fat_kg, fatTotal, FAT_EXP.trunk) },
+            { label: 'L. Leg', left: true,  topPct: 73, value: latest.ll_fat_kg,    ...evalTag(latest.ll_fat_kg,    fatTotal, FAT_EXP.ll) },
+            { label: 'R. Leg', left: false, topPct: 73, value: latest.rl_fat_kg,    ...evalTag(latest.rl_fat_kg,    fatTotal, FAT_EXP.rl) },
+          ]
+          const muscleItems: FigureItem[] = [
+            { label: 'L. Arm', left: true,  topPct: 32, value: latest.la_muscle_kg,    ...evalTag(latest.la_muscle_kg,    muscleTotal, MUS_EXP.la) },
+            { label: 'R. Arm', left: false, topPct: 32, value: latest.ra_muscle_kg,    ...evalTag(latest.ra_muscle_kg,    muscleTotal, MUS_EXP.ra) },
+            { label: 'Trunk',  left: true,  topPct: 51, value: latest.trunk_muscle_kg, ...evalTag(latest.trunk_muscle_kg, muscleTotal, MUS_EXP.trunk) },
+            { label: 'L. Leg', left: true,  topPct: 73, value: latest.ll_muscle_kg,    ...evalTag(latest.ll_muscle_kg,    muscleTotal, MUS_EXP.ll) },
+            { label: 'R. Leg', left: false, topPct: 73, value: latest.rl_muscle_kg,    ...evalTag(latest.rl_muscle_kg,    muscleTotal, MUS_EXP.rl) },
+          ]
 
           function Trend({ curr, prev: p, lowerBetter = false }: { curr: number | null; prev: number | null; lowerBetter?: boolean }) {
             if (curr == null || p == null) return null
@@ -412,81 +459,22 @@ export default function ProgressPage() {
                 <CardHead
                   title="Body composition"
                   sub={`Segmental analysis · ${latest.recorded_at.slice(0, 10)}`}
-                  right={
-                    <div className="inline-flex bg-[var(--color-border)] p-[3px] rounded-[10px] gap-0.5">
-                      {(['fat', 'muscle'] as const).map(m => (
-                        <button key={m} onClick={() => setBodyMode(m)}
-                          className={`px-[11px] py-[5px] rounded-[7px] text-[12px] font-bold transition-all capitalize ${
-                            bodyMode === m ? 'bg-[var(--color-surface)] text-[var(--color-text)]' : 'text-[var(--color-muted)]'
-                          }`}
-                          style={bodyMode === m ? { boxShadow: '0 1px 3px rgba(0,0,0,.08)' } : undefined}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  }
                 />
-
-                <div className="flex gap-4 items-start">
-                  {/* SVG Silhouette */}
-                  <div className="shrink-0 w-[120px]">
-                    <svg viewBox="0 0 160 336" fill="none" className="w-full">
-                      {/* Head */}
-                      <ellipse cx="80" cy="23" rx="21" ry="24" fill="var(--color-border)"/>
-                      {/* Neck */}
-                      <rect x="73" y="44" width="14" height="11" rx="5" fill="var(--color-border)"/>
-                      {/* Left arm — ra (character right, viewer left) */}
-                      <path d="M 5 60 L 22 56 L 20 174 L 2 176 Q 0 174 0 168 L 0 67 Q 0 60 5 60 Z" fill={c.ra}/>
-                      {/* Trunk */}
-                      <path d="M 24 54 L 136 54 Q 142 54 142 60 L 140 172 Q 140 182 132 182 L 28 182 Q 20 182 20 172 L 18 60 Q 18 54 24 54 Z" fill={c.trunk}/>
-                      {/* Right arm — la (character left, viewer right) */}
-                      <path d="M 155 60 L 138 56 L 140 174 L 158 176 Q 160 174 160 168 L 160 67 Q 160 60 155 60 Z" fill={c.la}/>
-                      {/* Left leg — rl */}
-                      <path d="M 22 184 L 72 184 L 70 320 Q 70 328 62 328 L 28 328 Q 20 328 20 320 Z" fill={c.rl}/>
-                      {/* Right leg — ll */}
-                      <path d="M 88 184 L 138 184 L 140 320 Q 140 328 132 328 L 96 328 Q 88 328 88 320 Z" fill={c.ll}/>
-                    </svg>
-
-                    {/* Colour legend */}
-                    <div className="mt-2 space-y-1">
-                      {[['#4ade80', 'Standard'], ['#f97316', 'High'], ['#60a5fa', 'Low']].map(([color, label]) => (
-                        <div key={label} className="flex items-center gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                          <span className="text-[10.5px] text-[var(--color-muted)] font-semibold">{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Segment values */}
-                  <div className="flex-1 space-y-2">
-                    {[
-                      { label: 'L. Arm', value: seg.ra },
-                      { label: 'R. Arm', value: seg.la },
-                      { label: 'Trunk',  value: seg.trunk },
-                      { label: 'L. Leg', value: seg.rl },
-                      { label: 'R. Leg', value: seg.ll },
-                    ].map(({ label, value }) => value != null && (
-                      <div key={label} className="flex items-center gap-2">
-                        <span className="text-[12px] text-[var(--color-muted)] font-semibold w-[42px] shrink-0">{label}</span>
-                        <div className="flex-1 h-[7px] rounded-full bg-[var(--color-border)] overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${Math.min(100, (value / Math.max(...[seg.ra, seg.la, seg.trunk, seg.rl, seg.ll].filter((v): v is number => v != null))) * 100)}%`,
-                              background: bodyMode === 'fat' ? '#f97316' : 'var(--color-accent)',
-                            }}
-                          />
-                        </div>
-                        <span className="text-[12px] font-mono text-[var(--color-text)] w-[38px] text-right">{value.toFixed(1)} kg</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex flex-col md:flex-row gap-6 md:gap-2">
+                  <BodyFigure title="Segmental fat" items={fatItems} />
+                  <div className="hidden md:block w-px bg-[var(--color-border)] shrink-0 self-stretch" />
+                  <div className="block md:hidden h-px bg-[var(--color-border)]" />
+                  <BodyFigure title="Muscle balance" items={muscleItems} />
                 </div>
-
-                {/* Medical disclaimer */}
-                <p className="mt-4 text-[10.5px] text-[var(--color-faint)] leading-relaxed">
+                <div className="flex gap-4 mt-3">
+                  {[['#22c55e', 'Standard'], ['#f97316', 'High'], ['#60a5fa', 'Low']].map(([color, label]) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                      <span className="text-[10.5px] text-[var(--color-muted)] font-semibold">{label}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10.5px] text-[var(--color-faint)] leading-relaxed">
                   ⚠️ Segmental values are estimates from BIA research formulae. Not for medical use. Consult a healthcare professional.
                 </p>
               </Card>
