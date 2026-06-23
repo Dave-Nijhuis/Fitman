@@ -5,25 +5,30 @@ from routers.auth import _verify_password
 
 # ── Unit tests ────────────────────────────────────────────────────────────────
 
-def test_verify_password_bcrypt_correct():
+def test_verify_password_correct():
     hashed = bcrypt.hashpw(b"secret", bcrypt.gensalt()).decode()
     assert _verify_password("secret", hashed) is True
 
 
-def test_verify_password_bcrypt_wrong():
+def test_verify_password_wrong():
     hashed = bcrypt.hashpw(b"secret", bcrypt.gensalt()).decode()
     assert _verify_password("wrong", hashed) is False
 
 
-def test_verify_password_plaintext_correct():
-    assert _verify_password("secret", "secret") is True
+# ── Setup endpoint ────────────────────────────────────────────────────────────
+
+def test_setup_not_required_when_user_exists(client: TestClient):
+    resp = client.get("/api/auth/setup-required")
+    assert resp.status_code == 200
+    assert resp.json()["required"] is False
 
 
-def test_verify_password_plaintext_wrong():
-    assert _verify_password("wrong", "secret") is False
+def test_register_fails_when_user_exists(client: TestClient):
+    resp = client.post("/api/auth/register", json={"username": "newuser", "password": "pass123"})
+    assert resp.status_code == 409
 
 
-# ── Integration tests ─────────────────────────────────────────────────────────
+# ── Login ─────────────────────────────────────────────────────────────────────
 
 def test_login_success(client: TestClient):
     resp = client.post("/api/auth/login", json={"username": "testuser", "password": "testpass"})
@@ -41,6 +46,8 @@ def test_login_wrong_username(client: TestClient):
     resp = client.post("/api/auth/login", json={"username": "wrong", "password": "testpass"})
     assert resp.status_code == 401
 
+
+# ── Protected endpoints ───────────────────────────────────────────────────────
 
 def test_protected_endpoint_without_token(client: TestClient):
     resp = client.get("/api/exercises")
